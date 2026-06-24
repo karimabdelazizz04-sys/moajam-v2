@@ -1,8 +1,10 @@
+import re
 from pathlib import Path
 
 import arabic_reshaper
 from bidi.algorithm import get_display
 from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -32,16 +34,46 @@ def _ensure_arabic_font() -> str:
     font_path = Path(settings.ARABIC_FONT_PATH)
     if font_path.exists():
         pdfmetrics.registerFont(TTFont(ARABIC_FONT_NAME, str(font_path)))
+        # Map bold/italic variants to the same face: the bundled font is a single
+        # variable-font instance, so <b>/<i> markup would otherwise fall back to
+        # Helvetica (and lose Arabic glyphs) instead of just rendering non-bold.
+        pdfmetrics.registerFontFamily(
+            ARABIC_FONT_NAME,
+            normal=ARABIC_FONT_NAME,
+            bold=ARABIC_FONT_NAME,
+            italic=ARABIC_FONT_NAME,
+            boldItalic=ARABIC_FONT_NAME,
+        )
         _arabic_font_registered = True
         return ARABIC_FONT_NAME
 
     return "Helvetica"
 
 
-def _ar(text: str) -> str:
-    """Reshape + apply bidi algorithm so Arabic renders right-to-left and joined."""
+_ARABIC_CHAR_RE = re.compile(r"[؀-ۿݐ-ݿ]")
+
+
+def _ar(text: str | None) -> str:
+    """Reshape + apply the bidi algorithm so Arabic renders right-to-left and
+    joined, then wrap in a <font> tag so it renders with an Arabic-capable
+    face even inside Paragraphs whose base style is Latin-only (Helvetica
+    has no Arabic glyphs and would otherwise draw boxes).
+
+    Applies to both static bilingual labels ("Label / تسمية") and dynamic
+    client-supplied data (names/addresses/notes/descriptions) - call this on
+    any text that might contain Arabic before handing it to a Paragraph.
+    Pure-Latin text passes through unchanged.
+    """
+    if not text:
+        return ""
+    if not _ARABIC_CHAR_RE.search(text):
+        return text
     reshaped = arabic_reshaper.reshape(text)
-    return get_display(reshaped)
+    display_text = get_display(reshaped)
+    font = _ensure_arabic_font()
+    if font == "Helvetica":
+        return display_text
+    return f'<font face="{font}">{display_text}</font>'
 
 
 def build_invoice_pdf(invoice: Invoice, output_path: str) -> str:
@@ -74,26 +106,35 @@ def build_invoice_pdf(invoice: Invoice, output_path: str) -> str:
         elements.append(Paragraph(f"Due date / {_ar('تاريخ الاستحقاق')}: {invoice.due_date}", normal))
     elements.append(Spacer(1, 8))
 
-    elements.append(Paragraph(f"<b>Bill to / {_ar('فاتورة إلى')}:</b> {invoice.client.name}", normal))
+    elements.append(Paragraph(f"<b>Bill to / {_ar('فاتورة إلى')}:</b> {_ar(invoice.client.name)}", normal))
     elements.append(Paragraph(invoice.client.email, normal))
     if invoice.client.address:
-        elements.append(Paragraph(invoice.client.address, normal))
+        elements.append(Paragraph(_ar(invoice.client.address), normal))
     elements.append(Spacer(1, 16))
 
+    # Table cells are plain strings rendered straight from TableStyle's FONTNAME (no
+    # <font> markup support like Paragraph has), so every cell goes through a
+    # Paragraph instead, with the Arabic font/reshaping applied only where _ar()
+    # detects Arabic characters (item descriptions can be Arabic too).
+    header_style = ParagraphStyle("TableHeader", parent=normal, textColor=colors.white, alignment=TA_LEFT)
+    header_style_right = ParagraphStyle("TableHeaderRight", parent=header_style, alignment=TA_RIGHT)
+    cell_style = ParagraphStyle("TableCell", parent=normal, alignment=TA_LEFT)
+    cell_style_right = ParagraphStyle("TableCellRight", parent=cell_style, alignment=TA_RIGHT)
+
     header = [
-        f"Description / {_ar('الوصف')}",
-        f"Qty / {_ar('الكمية')}",
-        f"Unit Price / {_ar('سعر الوحدة')}",
-        f"Total / {_ar('الإجمالي')}",
+        Paragraph(f"Description / {_ar('الوصف')}", header_style),
+        Paragraph(f"Qty / {_ar('الكمية')}", header_style_right),
+        Paragraph(f"Unit Price / {_ar('سعر الوحدة')}", header_style_right),
+        Paragraph(f"Total / {_ar('الإجمالي')}", header_style_right),
     ]
     table_data = [header]
     for item in invoice.items:
         table_data.append(
             [
-                item.description,
-                str(item.quantity),
-                f"{item.unit_price:,.2f} {invoice.currency}",
-                f"{item.quantity * item.unit_price:,.2f} {invoice.currency}",
+                Paragraph(_ar(item.description), cell_style),
+                Paragraph(str(item.quantity), cell_style_right),
+                Paragraph(f"{item.unit_price:,.2f} {invoice.currency}", cell_style_right),
+                Paragraph(f"{item.quantity * item.unit_price:,.2f} {invoice.currency}", cell_style_right),
             ]
         )
 
@@ -102,9 +143,6 @@ def build_invoice_pdf(invoice: Invoice, output_path: str) -> str:
         TableStyle(
             [
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f3f4f6")]),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
@@ -115,29 +153,29 @@ def build_invoice_pdf(invoice: Invoice, output_path: str) -> str:
     elements.append(table)
     elements.append(Spacer(1, 16))
 
+    totals_label_style = ParagraphStyle("TotalsLabel", parent=normal, alignment=TA_RIGHT)
+    totals_value_style = ParagraphStyle("TotalsValue", parent=normal, alignment=TA_RIGHT)
     totals_data = [
-        [f"Subtotal / {_ar('الإجمالي الفرعي')}", f"{invoice.subtotal:,.2f} {invoice.currency}"],
         [
-            f"Tax / {_ar('الضريبة')} ({invoice.tax_rate * 100:.0f}%)",
-            f"{invoice.tax_amount:,.2f} {invoice.currency}",
+            Paragraph(f"Subtotal / {_ar('الإجمالي الفرعي')}", totals_label_style),
+            Paragraph(f"{invoice.subtotal:,.2f} {invoice.currency}", totals_value_style),
         ],
-        [f"Total / {_ar('الإجمالي')}", f"{invoice.total:,.2f} {invoice.currency}"],
+        [
+            Paragraph(f"Tax / {_ar('الضريبة')} ({invoice.tax_rate * 100:.0f}%)", totals_label_style),
+            Paragraph(f"{invoice.tax_amount:,.2f} {invoice.currency}", totals_value_style),
+        ],
+        [
+            Paragraph(f"Total / {_ar('الإجمالي')}", totals_label_style),
+            Paragraph(f"{invoice.total:,.2f} {invoice.currency}", totals_value_style),
+        ],
     ]
     totals_table = Table(totals_data, colWidths=[13.5 * cm, 3.5 * cm])
-    totals_table.setStyle(
-        TableStyle(
-            [
-                ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-                ("LINEABOVE", (0, -1), (-1, -1), 1, colors.black),
-            ]
-        )
-    )
+    totals_table.setStyle(TableStyle([("LINEABOVE", (0, -1), (-1, -1), 1, colors.black)]))
     elements.append(totals_table)
 
     if invoice.notes:
         elements.append(Spacer(1, 16))
-        elements.append(Paragraph(f"<b>Notes / {_ar('ملاحظات')}:</b> {invoice.notes}", normal))
+        elements.append(Paragraph(f"<b>Notes / {_ar('ملاحظات')}:</b> {_ar(invoice.notes)}", normal))
 
     doc.build(elements)
     return output_path
