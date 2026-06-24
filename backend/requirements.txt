@@ -11,6 +11,9 @@ python-multipart==0.0.20
 python-jose==3.3.0
 PyJWT==2.10.1
 passlib[bcrypt]==1.7.4
+# passlib 1.7.4 reads a bcrypt-internal attribute removed in bcrypt>=4.1, which breaks
+# every password hash/verify call - pin below that until passlib is upgraded.
+bcrypt==4.0.1
 anthropic>=0.39.0,<1.0.0
 arabic-reshaper==3.0.0
 python-bidi==0.6.3
