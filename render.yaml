@@ -1,6 +1,6 @@
 databases:
   - name: moajam-db
-    plan: starter
+    plan: basic-256mb
     databaseName: moajam
     user: moajam
 
