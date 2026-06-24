@@ -8,4 +8,5 @@ backend/storage/invoices/*
 !backend/storage/**/.gitkeep
 backend/moajam.db
 .venv/
+.venv*/
 venv/

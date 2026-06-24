@@ -37,11 +37,17 @@ class TranslationJob(Base):
     # Price the translator set for this job; used as the auto-generated invoice's unit price.
     price: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id"), nullable=True)
+    reviewer_username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    review_status: Mapped[str] = mapped_column(String(32), default="not_required")
+    review_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     client = relationship("Client", back_populates="translation_jobs")
     invoice = relationship("Invoice", back_populates="translation_job", uselist=False)
+    project = relationship("Project", back_populates="jobs")
 
     @property
     def client_name(self) -> str | None:

@@ -19,6 +19,10 @@ class TranslationJobOut(BaseModel):
     error_message: str | None = None
     created_by: str | None = None
     price: float | None = None
+    project_id: int | None = None
+    reviewer_username: str | None = None
+    review_status: str = "not_required"
+    review_notes: str | None = None
     created_at: datetime
     completed_at: datetime | None = None
 

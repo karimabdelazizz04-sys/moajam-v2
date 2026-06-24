@@ -49,6 +49,14 @@ class Moajam_Api_Client {
         return $params ? '?' . http_build_query($params) : '';
     }
 
+    private static function json_request($method, $path, $payload = null) {
+        $args = ['headers' => ['Content-Type' => 'application/json']];
+        if ($payload !== null) {
+            $args['body'] = wp_json_encode($payload);
+        }
+        return self::request($method, $path, $args);
+    }
+
     // -------------------------------------------------------------------
     // Translation jobs
     // -------------------------------------------------------------------
@@ -113,5 +121,52 @@ class Moajam_Api_Client {
     public static function lookup_client($email) {
         $qs = self::query(['email' => $email]);
         return self::request('GET', '/api/v1/portal/clients/lookup' . $qs);
+    }
+
+    // -------------------------------------------------------------------
+    // ERP: staff, projects, review, analytics, notifications
+    // -------------------------------------------------------------------
+
+    public static function list_staff() {
+        return self::request('GET', '/api/v1/erp/staff');
+    }
+
+    public static function create_staff($payload) {
+        return self::json_request('POST', '/api/v1/erp/staff', $payload);
+    }
+
+    public static function update_staff($staff_id, $payload) {
+        return self::json_request('PATCH', '/api/v1/erp/staff/' . intval($staff_id), $payload);
+    }
+
+    public static function delete_staff($staff_id) {
+        return self::request('DELETE', '/api/v1/erp/staff/' . intval($staff_id));
+    }
+
+    public static function list_projects($client_id = null) {
+        $qs = self::query(['client_id' => $client_id]);
+        return self::request('GET', '/api/v1/erp/projects' . $qs);
+    }
+
+    public static function create_project($payload) {
+        return self::json_request('POST', '/api/v1/erp/projects', $payload);
+    }
+
+    public static function review_job($job_id, $payload) {
+        return self::json_request('PATCH', '/api/v1/erp/jobs/' . rawurlencode($job_id) . '/review', $payload);
+    }
+
+    public static function analytics_summary($start_date = null, $end_date = null) {
+        $qs = self::query(['start_date' => $start_date, 'end_date' => $end_date]);
+        return self::request('GET', '/api/v1/erp/analytics/summary' . $qs);
+    }
+
+    public static function list_notifications($recipient, $unread_only = false) {
+        $qs = self::query(['recipient' => $recipient, 'unread_only' => $unread_only ? 'true' : '']);
+        return self::request('GET', '/api/v1/erp/notifications' . $qs);
+    }
+
+    public static function mark_notification_read($notification_id) {
+        return self::request('POST', '/api/v1/erp/notifications/' . intval($notification_id) . '/read');
     }
 }

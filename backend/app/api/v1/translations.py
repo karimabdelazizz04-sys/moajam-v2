@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, verify_api_key
 from app.core.config import get_settings
 from app.models.client import Client
+from app.models.erp import Notification
 from app.models.translation_job import JobStatus, TranslationJob
 from app.schemas.translation import TranslationJobCreateResponse, TranslationJobOut
 from app.services.invoicing_service import create_invoice_for_translation_job
@@ -50,9 +51,28 @@ def _run_translation_job(job_id: str, db: Session) -> None:
         job.status = JobStatus.DONE
         db.commit()
         create_invoice_for_translation_job(db, job)
+        if job.created_by:
+            db.add(
+                Notification(
+                    recipient=job.created_by,
+                    type="job_done",
+                    message=f"Translation finished: {job.source_filename}",
+                    related_job_id=job.id,
+                )
+            )
+            db.commit()
     except Exception as exc:  # noqa: BLE001
         job.status = JobStatus.FAILED
         job.error_message = str(exc)
+        if job.created_by:
+            db.add(
+                Notification(
+                    recipient=job.created_by,
+                    type="job_failed",
+                    message=f"Translation failed: {job.source_filename} ({exc})",
+                    related_job_id=job.id,
+                )
+            )
     finally:
         from datetime import datetime
 

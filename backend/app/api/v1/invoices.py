@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, get_db
 from app.core.config import get_settings
 from app.models.client import Client
+from app.models.erp import Notification
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from app.schemas.invoice import InvoiceCreate, InvoiceOut, InvoiceUpdateStatus
 from app.services.invoice_pdf_service import build_invoice_pdf
@@ -78,6 +79,16 @@ def update_invoice_status(invoice_id: int, payload: InvoiceUpdateStatus, db: Ses
         db.commit()
         db.refresh(invoice)
         post_invoice_payment_to_ledger(db, invoice)
+        if invoice.translation_job and invoice.translation_job.created_by:
+            db.add(
+                Notification(
+                    recipient=invoice.translation_job.created_by,
+                    type="invoice_paid",
+                    message=f"Invoice {invoice.number} marked as paid.",
+                    related_invoice_id=invoice.id,
+                )
+            )
+            db.commit()
     else:
         db.commit()
     db.refresh(invoice)

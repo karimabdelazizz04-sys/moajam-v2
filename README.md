@@ -47,10 +47,17 @@ moajam-almaani-v2/
 3. **render.yaml**: Blueprint جاهز لنشر الباك إند + قاعدة بيانات Postgres على Render، مع Disk دائم لـ `storage/` (الرفعات والمخرجات والفواتير ما تضيعش بين الـ deployments).
 
 4. **WordPress Plugin** (`wordpress-plugin/moajam-platform/`) — بديل كامل للـ snippet القديم، فيه لوحتين (العميل لا يدخل على النظام نهائيًا - المترجم هو اللي بيسجّل بيانات العميل والسعر بدلًا منه):
-   - `[moajam_translator_dashboard]` — لرول WordPress اسمه "Moajam Translator"، **كل مترجم له يوزر WordPress مستقل**: يرفع الملف، يكتب اسم/بريد/تليفون العميل، يحدد السعر المتفق عليه، يتابع طلباته الشخصية فقط (مفلترة تلقائيًا باسم المستخدم بتاعه)، ويحمّل الـ DOCX.
-   - `[moajam_admin_dashboard]` — لكابابيليتي `moajam_access_admin_dashboard` (الأدمن تلقائيًا): يشوف **كل** الطلبات من كل المترجمين (مين المترجم، مين العميل، السعر، الحالة) وكل الفواتير.
+   - `[moajam_translator_dashboard]` — لرول WordPress اسمه "Moajam Translator"، **كل مترجم له يوزر WordPress مستقل**: يرفع الملف، يكتب اسم/بريد/تليفون العميل، يحدد السعر المتفق عليه، يتابع طلباته الشخصية فقط (مفلترة تلقائيًا باسم المستخدم بتاعه)، يشوف إشعاراته، ويحمّل الـ DOCX.
+   - `[moajam_admin_dashboard]` — لكابابيليتي `moajam_access_admin_dashboard` (الأدمن تلقائيًا): ملخص تحليلي (Analytics)، إدارة المترجمين/المراجعين (Staff) مع إحصائياتهم، **كل** الطلبات من كل المترجمين (مين المترجم، مين العميل، السعر، الحالة، حالة المراجعة)، كل الفواتير، والإشعارات.
    - المفتاح السري بياخده من `wp-config.php` فقط (نفس فكرة الـ snippet القديم) عبر كلاس `Moajam_Api_Client`.
    - عشان تضيف مترجم جديد: من wp-admin → Users → Add New → الدور (Role) = "Moajam Translator".
+
+5. **نظام ERP** (`app/models/erp.py`, `app/api/v1/erp.py`) عبر `/api/v1/erp/*` (محمي بـ X-API-Key):
+   - **Staff** — سجل ERP لكل مترجم/مراجع (مرتبط بـ `username` بتاع WordPress)، فيه نسبة عمولة، وإحصائيات تلقائية (عدد الطلبات، المكتمل، الإيراد).
+   - **Projects** — تجميع أكتر من طلب ترجمة تحت مشروع واحد لعميل معيّن.
+   - **Review workflow** — `PATCH /erp/jobs/{id}/review` لتعيين مراجع وتحديد حالة المراجعة (pending/approved/rejected)، وبيولّد إشعار تلقائي للمراجع وللمترجم.
+   - **Analytics** — `GET /erp/analytics/summary` تجميع الطلبات/الإيراد لكل مترجم وكل عميل، بفلترة بتاريخ.
+   - **Notifications** — إشعارات تلقائية عند اكتمال/فشل الترجمة وعند دفع الفاتورة، تظهر في لوحتي المترجم والأدمن.
 
 ---
 
@@ -101,11 +108,6 @@ define('MOAJAM_API_KEY', 'القيمة-اللي-أخدتها-من-Render-Environ
 - حدّث حالة فاتورة لـ `paid` وشيك إن قيد اليومية اتعمل في `/api/v1/accounting/journal-entries`.
 
 ---
-
-## الباقي المؤجَّل لجلسة تالية (حسب الأولوية اللي تم الاتفاق عليها)
-
-- WordPress Plugin كامل بثلاث Dashboards (مترجم / عميل / أدمن) — يستهلك الـ API الحالي.
-- نظام ERP (إدارة مترجمين ومراجعين، Project management، Analytics، Notifications).
 
 ## ملاحظات مهمة
 

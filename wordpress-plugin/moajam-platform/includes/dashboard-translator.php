@@ -81,6 +81,9 @@ add_shortcode('moajam_translator_dashboard', function () {
             </thead>
             <tbody id="moajam-t-jobs"><tr><td colspan="7"><?php esc_html_e('جاري التحميل...', 'moajam-platform'); ?></td></tr></tbody>
         </table>
+
+        <h3><?php esc_html_e('إشعاراتي', 'moajam-platform'); ?></h3>
+        <ul id="moajam-t-notifications"><li><?php esc_html_e('جاري التحميل...', 'moajam-platform'); ?></li></ul>
     </div>
 
     <script>
@@ -115,8 +118,23 @@ add_shortcode('moajam_translator_dashboard', function () {
             }).join('');
         }
 
-        document.getElementById('moajam-t-refresh').addEventListener('click', loadJobs);
+        async function loadNotifications() {
+            const list = document.getElementById('moajam-t-notifications');
+            const res = await fetch(ajaxUrl + '?action=moajam_t_list_notifications&_ajax_nonce=' + nonce);
+            const data = await res.json();
+            if (!data.success) {
+                list.innerHTML = '<li>' + (data.data && data.data.message || 'خطأ') + '</li>';
+                return;
+            }
+            list.innerHTML = data.data.length ? data.data.map(function (n) {
+                return '<li>' + (n.is_read ? '' : '🔵 ') + n.message
+                    + ' <small>' + new Date(n.created_at).toLocaleString() + '</small></li>';
+            }).join('') : '<li><?php echo esc_js(__('لا توجد إشعارات', 'moajam-platform')); ?></li>';
+        }
+
+        document.getElementById('moajam-t-refresh').addEventListener('click', function () { loadJobs(); loadNotifications(); });
         loadJobs();
+        loadNotifications();
 
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -195,6 +213,15 @@ add_action('wp_ajax_moajam_t_create_job', function () {
 add_action('wp_ajax_moajam_t_list_jobs', function () {
     moajam_t_check_access();
     $result = Moajam_Api_Client::list_jobs(null, null, moajam_t_current_identifier());
+    if (isset($result['error'])) {
+        wp_send_json_error(['message' => $result['error']], $result['code']);
+    }
+    wp_send_json_success($result['data']);
+});
+
+add_action('wp_ajax_moajam_t_list_notifications', function () {
+    moajam_t_check_access();
+    $result = Moajam_Api_Client::list_notifications(moajam_t_current_identifier());
     if (isset($result['error'])) {
         wp_send_json_error(['message' => $result['error']], $result['code']);
     }
