@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, verify_api_key
 from app.core.config import get_settings
+from app.models.client import Client
 from app.models.translation_job import JobStatus, TranslationJob
 from app.schemas.translation import TranslationJobCreateResponse, TranslationJobOut
 from app.services.invoicing_service import create_invoice_for_translation_job
@@ -59,6 +60,22 @@ def _run_translation_job(job_id: str, db: Session) -> None:
         db.commit()
 
 
+def _resolve_client_id(
+    db: Session, client_id: int | None, client_email: str | None, client_name: str | None
+) -> int | None:
+    if client_id:
+        return client_id
+    if not client_email:
+        return None
+    client = db.query(Client).filter(Client.email == client_email).first()
+    if not client:
+        client = Client(name=client_name or client_email, email=client_email)
+        db.add(client)
+        db.commit()
+        db.refresh(client)
+    return client.id
+
+
 @router.post("", response_model=TranslationJobCreateResponse, status_code=201)
 def create_translation_job(
     background_tasks: BackgroundTasks,
@@ -67,8 +84,12 @@ def create_translation_job(
     target_language: str = Form("Arabic"),
     legal_domain: str | None = Form(None),
     client_id: int | None = Form(None),
+    client_email: str | None = Form(None),
+    client_name: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
+    client_id = _resolve_client_id(db, client_id, client_email, client_name)
+
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in ALLOWED_SUFFIXES:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {suffix}")
@@ -96,6 +117,23 @@ def create_translation_job(
     background_tasks.add_task(_run_translation_job, job_id, db)
 
     return TranslationJobCreateResponse(job_id=job.id, status=job.status)
+
+
+@router.get("", response_model=list[TranslationJobOut])
+def list_translation_jobs(
+    client_id: int | None = None,
+    client_email: str | None = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(TranslationJob)
+    if client_email:
+        client = db.query(Client).filter(Client.email == client_email).first()
+        if not client:
+            return []
+        client_id = client.id
+    if client_id:
+        query = query.filter(TranslationJob.client_id == client_id)
+    return query.order_by(TranslationJob.created_at.desc()).all()
 
 
 @router.get("/{job_id}", response_model=TranslationJobOut)

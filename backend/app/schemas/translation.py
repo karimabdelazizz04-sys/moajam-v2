@@ -9,6 +9,7 @@ class TranslationJobOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    client_id: int | None = None
     source_filename: str
     source_language: str
     target_language: str

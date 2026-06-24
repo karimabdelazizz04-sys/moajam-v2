@@ -46,6 +46,12 @@ moajam-almaani-v2/
 
 3. **render.yaml**: Blueprint جاهز لنشر الباك إند + قاعدة بيانات Postgres على Render، مع Disk دائم لـ `storage/` (الرفعات والمخرجات والفواتير ما تضيعش بين الـ deployments).
 
+4. **WordPress Plugin** (`wordpress-plugin/moajam-platform/`) — بديل كامل للـ snippet القديم، فيه 3 لوحات:
+   - `[moajam_translator_dashboard]` — لرول WordPress جديد اسمه "Moajam Translator" (أو أي Administrator): رفع ملف، ربطه ببريد عميل (اختياري)، متابعة كل الطلبات، تحميل الـ DOCX.
+   - `[moajam_client_dashboard]` — لأي مستخدم WordPress مسجّل دخول: يشوف طلباته وفواتيره الخاصة فقط (المطابقة بالبريد الإلكتروني)، مع تحقق ownership قبل أي تحميل.
+   - `[moajam_admin_dashboard]` — لكابابيليتي `moajam_access_admin_dashboard` (الأدمن تلقائيًا): يشوف كل الطلبات وكل الفواتير لكل العملاء.
+   - المفتاح السري بياخده من `wp-config.php` فقط (نفس فكرة الـ snippet القديم) عبر كلاس `Moajam_Api_Client`.
+
 ---
 
 ## الخطوات المطلوبة منك بالتفصيل

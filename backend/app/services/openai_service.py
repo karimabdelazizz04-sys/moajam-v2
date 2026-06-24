@@ -1,30 +1,11 @@
 from openai import OpenAI
 
 from app.core.config import get_settings
+from app.services.translation_prompt import get_translation_prompt
 
 settings = get_settings()
 
 _client = OpenAI(api_key=settings.OPENAI_API_KEY)
-
-SYSTEM_PROMPT = """\
-You are a professional legal translator working for Moajam Almaani, a legal translation \
-agency. Translate the legal document the user provides from {source_language} into \
-{target_language}, preserving legal meaning, register, and formatting precisely.
-
-You have access to a legal terminology and precedent search tool covering the firm's \
-reference collections. Use it whenever a term, clause type, or phrasing has a specialized \
-legal equivalent, to keep terminology consistent with prior translations.
-
-Rules:
-- Preserve numbering, clause structure, and paragraph breaks.
-- Use formal legal terminology appropriate for {target_language} legal documents.
-- Do not omit, summarize, or add content. Translate completely and literally where legal \
-  meaning requires it, and idiomatically where natural language requires it.
-- If a term has no direct equivalent, keep the original term in parentheses after your \
-  translation.
-- Output ONLY the translated document text. Do not add commentary, notes, or explanations \
-  before or after the translation.
-"""
 
 
 def translate_text(
@@ -36,11 +17,13 @@ def translate_text(
     """Send extracted document text to OpenAI and return the translated text.
 
     Uses the file_search tool against the firm's legal vector stores (9 collections)
-    so the model can ground terminology in prior translations and reference material.
+    so the model can ground terminology/layout in the matched knowledge collection.
     """
-    system = SYSTEM_PROMPT.format(source_language=source_language, target_language=target_language)
+    task_context = f"Source language: {source_language}\nTarget language: {target_language}"
     if legal_domain:
-        system += f"\nThis document belongs to the legal domain: {legal_domain}."
+        task_context += f"\nDeclared document/legal domain hint: {legal_domain}"
+
+    system = get_translation_prompt(task_context)
 
     tools = []
     vector_store_ids = settings.openai_vector_store_id_list

@@ -1,0 +1,91 @@
+.moajam-dashboard {
+    max-width: 960px;
+    margin: 0 auto;
+    direction: rtl;
+    font-family: inherit;
+}
+
+.moajam-dashboard h2 {
+    margin-bottom: 8px;
+}
+
+.moajam-dashboard h3 {
+    margin-top: 28px;
+    margin-bottom: 8px;
+}
+
+.moajam-form p {
+    margin-bottom: 12px;
+}
+
+.moajam-form input[type="file"],
+.moajam-form input[type="email"],
+.moajam-form input[type="text"],
+.moajam-form select {
+    width: 100%;
+    max-width: 420px;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.moajam-form button,
+.moajam-dashboard > button {
+    background: #1f2937;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.moajam-form button:hover,
+.moajam-dashboard > button:hover {
+    background: #374151;
+}
+
+.moajam-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+}
+
+.moajam-table th,
+.moajam-table td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    text-align: right;
+}
+
+.moajam-table thead {
+    background: #1f2937;
+    color: #fff;
+}
+
+.moajam-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.moajam-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: #fff;
+    background: #6b7280;
+}
+
+.moajam-badge-pending { background: #f59e0b; }
+.moajam-badge-processing { background: #3b82f6; }
+.moajam-badge-done { background: #10b981; }
+.moajam-badge-failed { background: #ef4444; }
+.moajam-badge-draft { background: #6b7280; }
+.moajam-badge-sent { background: #3b82f6; }
+.moajam-badge-paid { background: #10b981; }
+.moajam-badge-overdue { background: #ef4444; }
+.moajam-badge-cancelled { background: #6b7280; }
+
+.moajam-admin-note {
+    margin-top: 20px;
+    font-size: 13px;
+    color: #6b7280;
+}
