@@ -1,0 +1,58 @@
+databases:
+  - name: moajam-db
+    plan: starter
+    databaseName: moajam
+    user: moajam
+
+services:
+  - type: web
+    name: moajam-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: moajam-storage
+      mountPath: /app/storage
+      sizeGB: 5
+    envVars:
+      - key: ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: API_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: moajam-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.1
+      - key: OPENAI_VECTOR_STORE_IDS
+        sync: false
+      - key: CORS_ORIGINS
+        value: '["https://moajamalmaani.com","https://www.moajamalmaani.com"]'
+      - key: COMPANY_NAME
+        value: Moajam Almaani
+      - key: COMPANY_NAME_AR
+        value: معجم المعاني
+      - key: COMPANY_EMAIL
+        value: info@moajamalmaani.com
+      - key: COMPANY_ADDRESS
+        value: ""
+      - key: CURRENCY
+        value: EGP
+      - key: ACCOUNTING_CASH_ACCOUNT_CODE
+        value: "1000"
+      - key: ACCOUNTING_REVENUE_ACCOUNT_CODE
+        value: "4000"
+      - key: PAYMOB_API_KEY
+        sync: false
+      - key: PAYMOB_INTEGRATION_ID
+        sync: false
