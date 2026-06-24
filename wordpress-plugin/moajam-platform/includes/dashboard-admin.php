@@ -24,13 +24,15 @@ add_shortcode('moajam_admin_dashboard', function () {
             <thead>
                 <tr>
                     <th><?php esc_html_e('الملف', 'moajam-platform'); ?></th>
-                    <th><?php esc_html_e('Client ID', 'moajam-platform'); ?></th>
+                    <th><?php esc_html_e('العميل', 'moajam-platform'); ?></th>
+                    <th><?php esc_html_e('المترجم', 'moajam-platform'); ?></th>
+                    <th><?php esc_html_e('السعر', 'moajam-platform'); ?></th>
                     <th><?php esc_html_e('اللغة', 'moajam-platform'); ?></th>
                     <th><?php esc_html_e('الحالة', 'moajam-platform'); ?></th>
                     <th><?php esc_html_e('تاريخ الإنشاء', 'moajam-platform'); ?></th>
                 </tr>
             </thead>
-            <tbody id="moajam-a-jobs"><tr><td colspan="5"><?php esc_html_e('جاري التحميل...', 'moajam-platform'); ?></td></tr></tbody>
+            <tbody id="moajam-a-jobs"><tr><td colspan="7"><?php esc_html_e('جاري التحميل...', 'moajam-platform'); ?></td></tr></tbody>
         </table>
 
         <h3><?php esc_html_e('كل الفواتير', 'moajam-platform'); ?></h3>
@@ -62,15 +64,17 @@ add_shortcode('moajam_admin_dashboard', function () {
             const res = await fetch(ajaxUrl + '?action=moajam_a_list_jobs&_ajax_nonce=' + nonce);
             const data = await res.json();
             if (!data.success) {
-                body.innerHTML = '<tr><td colspan="5">' + (data.data && data.data.message || 'خطأ') + '</td></tr>';
+                body.innerHTML = '<tr><td colspan="7">' + (data.data && data.data.message || 'خطأ') + '</td></tr>';
                 return;
             }
             body.innerHTML = data.data.length ? data.data.map(function (job) {
-                return '<tr><td>' + job.source_filename + '</td><td>' + (job.client_id ?? '-') + '</td>'
+                return '<tr><td>' + job.source_filename + '</td><td>' + (job.client_name || '-') + '</td>'
+                    + '<td>' + (job.created_by || '-') + '</td>'
+                    + '<td>' + (job.price != null ? job.price : '-') + '</td>'
                     + '<td>' + job.target_language + '</td>'
                     + '<td><span class="moajam-badge moajam-badge-' + job.status + '">' + job.status + '</span></td>'
                     + '<td>' + new Date(job.created_at).toLocaleString() + '</td></tr>';
-            }).join('') : '<tr><td colspan="5">-</td></tr>';
+            }).join('') : '<tr><td colspan="7">-</td></tr>';
         }
 
         async function loadInvoices() {

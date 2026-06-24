@@ -4,10 +4,13 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Translator dashboard: upload a document for translation, track status,
- * download the finished DOCX. Restricted to users with the
- * 'moajam_access_translator_dashboard' capability (the "Moajam Translator"
- * role, or Administrators).
+ * Translator dashboard: upload a document for translation, enter the
+ * client's data and price (clients never log into this system - the
+ * translator records everything on their behalf), track status, download
+ * the finished DOCX. Each translator has their own WordPress account and
+ * only sees the jobs they personally submitted; restricted to users with
+ * the 'moajam_access_translator_dashboard' capability (the "Moajam
+ * Translator" role, or Administrators).
  */
 add_shortcode('moajam_translator_dashboard', function () {
     if (!is_user_logged_in()) {
@@ -17,10 +20,13 @@ add_shortcode('moajam_translator_dashboard', function () {
         return '<p>' . esc_html__('غير مصرح لك بالوصول لهذه اللوحة.', 'moajam-platform') . '</p>';
     }
 
+    $current_user = wp_get_current_user();
+
     ob_start();
     ?>
     <div class="moajam-dashboard moajam-translator-dashboard">
         <h2><?php esc_html_e('لوحة المترجم', 'moajam-platform'); ?></h2>
+        <p><?php printf(esc_html__('مسجّل الدخول بصفة: %s', 'moajam-platform'), '<strong>' . esc_html($current_user->display_name) . '</strong>'); ?></p>
 
         <form id="moajam-t-form" enctype="multipart/form-data" class="moajam-form">
             <p>
@@ -28,8 +34,20 @@ add_shortcode('moajam_translator_dashboard', function () {
                 <input type="file" name="file" accept=".docx,.pdf,.txt" required>
             </p>
             <p>
-                <label><?php esc_html_e('بريد العميل (اختياري - لربط الفاتورة):', 'moajam-platform'); ?></label><br>
-                <input type="email" name="client_email" placeholder="client@example.com">
+                <label><?php esc_html_e('اسم العميل:', 'moajam-platform'); ?></label><br>
+                <input type="text" name="client_name" placeholder="اسم العميل" required>
+            </p>
+            <p>
+                <label><?php esc_html_e('بريد العميل:', 'moajam-platform'); ?></label><br>
+                <input type="email" name="client_email" placeholder="client@example.com" required>
+            </p>
+            <p>
+                <label><?php esc_html_e('رقم تليفون العميل (اختياري):', 'moajam-platform'); ?></label><br>
+                <input type="text" name="client_phone" placeholder="01xxxxxxxxx">
+            </p>
+            <p>
+                <label><?php esc_html_e('السعر المتفق عليه مع العميل:', 'moajam-platform'); ?></label><br>
+                <input type="number" name="price" min="0" step="0.01" placeholder="0.00" required>
             </p>
             <p>
                 <label><?php esc_html_e('اللغة الهدف:', 'moajam-platform'); ?></label><br>
@@ -47,19 +65,21 @@ add_shortcode('moajam_translator_dashboard', function () {
         </form>
         <div id="moajam-t-status"></div>
 
-        <h3><?php esc_html_e('كل الطلبات', 'moajam-platform'); ?></h3>
+        <h3><?php esc_html_e('طلباتي', 'moajam-platform'); ?></h3>
         <button id="moajam-t-refresh" type="button"><?php esc_html_e('تحديث', 'moajam-platform'); ?></button>
         <table class="moajam-table">
             <thead>
                 <tr>
                     <th><?php esc_html_e('الملف', 'moajam-platform'); ?></th>
+                    <th><?php esc_html_e('العميل', 'moajam-platform'); ?></th>
+                    <th><?php esc_html_e('السعر', 'moajam-platform'); ?></th>
                     <th><?php esc_html_e('اللغة', 'moajam-platform'); ?></th>
                     <th><?php esc_html_e('الحالة', 'moajam-platform'); ?></th>
                     <th><?php esc_html_e('تاريخ الإنشاء', 'moajam-platform'); ?></th>
                     <th><?php esc_html_e('تحميل', 'moajam-platform'); ?></th>
                 </tr>
             </thead>
-            <tbody id="moajam-t-jobs"><tr><td colspan="5"><?php esc_html_e('جاري التحميل...', 'moajam-platform'); ?></td></tr></tbody>
+            <tbody id="moajam-t-jobs"><tr><td colspan="7"><?php esc_html_e('جاري التحميل...', 'moajam-platform'); ?></td></tr></tbody>
         </table>
     </div>
 
@@ -72,22 +92,24 @@ add_shortcode('moajam_translator_dashboard', function () {
         const jobsBody = document.getElementById('moajam-t-jobs');
 
         async function loadJobs() {
-            jobsBody.innerHTML = '<tr><td colspan="5"><?php echo esc_js(__('جاري التحميل...', 'moajam-platform')); ?></td></tr>';
+            jobsBody.innerHTML = '<tr><td colspan="7"><?php echo esc_js(__('جاري التحميل...', 'moajam-platform')); ?></td></tr>';
             const res = await fetch(ajaxUrl + '?action=moajam_t_list_jobs&_ajax_nonce=' + nonce);
             const data = await res.json();
             if (!data.success) {
-                jobsBody.innerHTML = '<tr><td colspan="5">' + (data.data && data.data.message || 'خطأ') + '</td></tr>';
+                jobsBody.innerHTML = '<tr><td colspan="7">' + (data.data && data.data.message || 'خطأ') + '</td></tr>';
                 return;
             }
             if (!data.data.length) {
-                jobsBody.innerHTML = '<tr><td colspan="5"><?php echo esc_js(__('لا توجد طلبات بعد', 'moajam-platform')); ?></td></tr>';
+                jobsBody.innerHTML = '<tr><td colspan="7"><?php echo esc_js(__('لا توجد طلبات بعد', 'moajam-platform')); ?></td></tr>';
                 return;
             }
             jobsBody.innerHTML = data.data.map(function (job) {
                 const dl = job.status === 'done'
                     ? '<a href="' + ajaxUrl + '?action=moajam_t_download&job_id=' + encodeURIComponent(job.id) + '&_ajax_nonce=' + nonce + '" target="_blank">تحميل</a>'
                     : '-';
-                return '<tr><td>' + job.source_filename + '</td><td>' + job.target_language + '</td>'
+                return '<tr><td>' + job.source_filename + '</td><td>' + (job.client_name || '-') + '</td>'
+                    + '<td>' + (job.price != null ? job.price : '-') + '</td>'
+                    + '<td>' + job.target_language + '</td>'
                     + '<td><span class="moajam-badge moajam-badge-' + job.status + '">' + job.status + '</span></td>'
                     + '<td>' + new Date(job.created_at).toLocaleString() + '</td><td>' + dl + '</td></tr>';
             }).join('');
@@ -129,6 +151,14 @@ function moajam_t_check_access() {
     check_ajax_referer('moajam_translator');
 }
 
+/**
+ * Stable identifier for "who submitted this job" - the WP username, stored
+ * on the backend job record so each translator's list only shows their own.
+ */
+function moajam_t_current_identifier() {
+    return wp_get_current_user()->user_login;
+}
+
 add_action('wp_ajax_moajam_t_create_job', function () {
     moajam_t_check_access();
 
@@ -147,7 +177,11 @@ add_action('wp_ajax_moajam_t_create_job', function () {
         [
             'target_language' => sanitize_text_field($_POST['target_language'] ?? 'Arabic'),
             'legal_domain'    => sanitize_text_field($_POST['legal_domain'] ?? ''),
+            'client_name'     => sanitize_text_field($_POST['client_name'] ?? ''),
             'client_email'    => sanitize_email($_POST['client_email'] ?? ''),
+            'client_phone'    => sanitize_text_field($_POST['client_phone'] ?? ''),
+            'price'           => sanitize_text_field($_POST['price'] ?? ''),
+            'created_by'      => moajam_t_current_identifier(),
             'source_language' => 'auto-detect',
         ]
     );
@@ -160,7 +194,7 @@ add_action('wp_ajax_moajam_t_create_job', function () {
 
 add_action('wp_ajax_moajam_t_list_jobs', function () {
     moajam_t_check_access();
-    $result = Moajam_Api_Client::list_jobs();
+    $result = Moajam_Api_Client::list_jobs(null, null, moajam_t_current_identifier());
     if (isset($result['error'])) {
         wp_send_json_error(['message' => $result['error']], $result['code']);
     }
@@ -174,6 +208,22 @@ add_action('wp_ajax_moajam_t_download', function () {
     check_ajax_referer('moajam_translator');
 
     $job_id = sanitize_text_field($_GET['job_id'] ?? '');
+
+    // Ownership check: a translator may only download jobs they themselves submitted.
+    $jobs_result = Moajam_Api_Client::list_jobs(null, null, moajam_t_current_identifier());
+    $owned = false;
+    if (!isset($jobs_result['error'])) {
+        foreach ($jobs_result['data'] as $job) {
+            if ($job['id'] === $job_id) {
+                $owned = true;
+                break;
+            }
+        }
+    }
+    if (!$owned && !current_user_can('moajam_access_admin_dashboard')) {
+        wp_die('غير مصرح بتحميل هذا الملف.');
+    }
+
     $result = Moajam_Api_Client::fetch_job_download($job_id);
     if (isset($result['error'])) {
         wp_die('تعذر تحميل الملف.');

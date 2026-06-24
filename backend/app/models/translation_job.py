@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -32,8 +32,17 @@ class TranslationJob(Base):
     status: Mapped[JobStatus] = mapped_column(Enum(JobStatus), default=JobStatus.PENDING)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # The translator (WordPress username/email) who submitted this job on the client's behalf.
+    created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Price the translator set for this job; used as the auto-generated invoice's unit price.
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     client = relationship("Client", back_populates="translation_jobs")
     invoice = relationship("Invoice", back_populates="translation_job", uselist=False)
+
+    @property
+    def client_name(self) -> str | None:
+        return self.client.name if self.client else None

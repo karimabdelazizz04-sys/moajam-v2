@@ -61,7 +61,11 @@ def _run_translation_job(job_id: str, db: Session) -> None:
 
 
 def _resolve_client_id(
-    db: Session, client_id: int | None, client_email: str | None, client_name: str | None
+    db: Session,
+    client_id: int | None,
+    client_email: str | None,
+    client_name: str | None,
+    client_phone: str | None = None,
 ) -> int | None:
     if client_id:
         return client_id
@@ -69,10 +73,20 @@ def _resolve_client_id(
         return None
     client = db.query(Client).filter(Client.email == client_email).first()
     if not client:
-        client = Client(name=client_name or client_email, email=client_email)
+        client = Client(name=client_name or client_email, email=client_email, phone=client_phone)
         db.add(client)
         db.commit()
         db.refresh(client)
+    else:
+        changed = False
+        if client_name and client.name != client_name:
+            client.name = client_name
+            changed = True
+        if client_phone and not client.phone:
+            client.phone = client_phone
+            changed = True
+        if changed:
+            db.commit()
     return client.id
 
 
@@ -86,9 +100,12 @@ def create_translation_job(
     client_id: int | None = Form(None),
     client_email: str | None = Form(None),
     client_name: str | None = Form(None),
+    client_phone: str | None = Form(None),
+    created_by: str | None = Form(None),
+    price: float | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    client_id = _resolve_client_id(db, client_id, client_email, client_name)
+    client_id = _resolve_client_id(db, client_id, client_email, client_name, client_phone)
 
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in ALLOWED_SUFFIXES:
@@ -110,6 +127,8 @@ def create_translation_job(
         target_language=target_language,
         legal_domain=legal_domain,
         status=JobStatus.PENDING,
+        created_by=created_by,
+        price=price,
     )
     db.add(job)
     db.commit()
@@ -123,6 +142,7 @@ def create_translation_job(
 def list_translation_jobs(
     client_id: int | None = None,
     client_email: str | None = None,
+    created_by: str | None = None,
     db: Session = Depends(get_db),
 ):
     query = db.query(TranslationJob)
@@ -133,6 +153,8 @@ def list_translation_jobs(
         client_id = client.id
     if client_id:
         query = query.filter(TranslationJob.client_id == client_id)
+    if created_by:
+        query = query.filter(TranslationJob.created_by == created_by)
     return query.order_by(TranslationJob.created_at.desc()).all()
 
 

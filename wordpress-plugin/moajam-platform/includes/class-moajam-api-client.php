@@ -84,8 +84,8 @@ class Moajam_Api_Client {
         return self::request('GET', '/api/v1/translations/' . rawurlencode($job_id));
     }
 
-    public static function list_jobs($client_email = null, $client_id = null) {
-        $qs = self::query(['client_email' => $client_email, 'client_id' => $client_id]);
+    public static function list_jobs($client_email = null, $client_id = null, $created_by = null) {
+        $qs = self::query(['client_email' => $client_email, 'client_id' => $client_id, 'created_by' => $created_by]);
         return self::request('GET', '/api/v1/translations' . $qs);
     }
 

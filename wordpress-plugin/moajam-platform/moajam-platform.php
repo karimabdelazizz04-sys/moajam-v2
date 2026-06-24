@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Moajam Platform
- * Description: Dashboards (Translator / Client / Admin) for the Moajam Almaani translation backend (FastAPI on Render).
- * Version: 2.0.0
+ * Description: Dashboards (Translator / Admin) for the Moajam Almaani translation backend (FastAPI on Render). Clients never log in - translators enter client details and price on their behalf.
+ * Version: 2.1.0
  * Text Domain: moajam-platform
  *
  * Required constants (define in wp-config.php, NOT in this plugin or any UI field,
@@ -21,7 +21,6 @@ define('MOAJAM_PLATFORM_URL', plugin_dir_url(__FILE__));
 
 require_once MOAJAM_PLATFORM_DIR . 'includes/class-moajam-api-client.php';
 require_once MOAJAM_PLATFORM_DIR . 'includes/dashboard-translator.php';
-require_once MOAJAM_PLATFORM_DIR . 'includes/dashboard-client.php';
 require_once MOAJAM_PLATFORM_DIR . 'includes/dashboard-admin.php';
 
 /**

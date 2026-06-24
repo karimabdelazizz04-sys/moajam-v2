@@ -10,12 +10,15 @@ class TranslationJobOut(BaseModel):
 
     id: str
     client_id: int | None = None
+    client_name: str | None = None
     source_filename: str
     source_language: str
     target_language: str
     legal_domain: str | None = None
     status: JobStatus
     error_message: str | None = None
+    created_by: str | None = None
+    price: float | None = None
     created_at: datetime
     completed_at: datetime | None = None
 

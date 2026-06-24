@@ -34,12 +34,13 @@ def create_invoice_for_translation_job(db: Session, job: TranslationJob) -> Invo
         currency=settings.CURRENCY,
         issue_date=date.today(),
     )
+    unit_price = job.price if job.price is not None else settings.DEFAULT_TRANSLATION_PRICE
     invoice.items = [
         InvoiceItem(
             description=f"Legal translation - {job.source_filename} "
             f"({job.source_language} -> {job.target_language})",
             quantity=1,
-            unit_price=settings.DEFAULT_TRANSLATION_PRICE,
+            unit_price=unit_price,
         )
     ]
     db.add(invoice)
