@@ -1,0 +1,184 @@
+ALL-IN-ONE KNOWLEDGE MASTER RULES
+UAE Legal Translation — Collection-First / No Patch / No Blank Pages
+
+PURPOSE:
+This file is the single Knowledge rules file. It combines routing, master rules, Arabic RTL rules, collection-first layout guidance, matching sample formatting, no patch and no blank page rules.
+
+1. DOCUMENT TYPE ROUTING
+
+A_Banking_Financial documents must follow banking/cheque/bank-return sample layouts.
+B_Shipping_Customs_Logistics documents must follow logistics/customs/shipping/invoice sample layouts.
+C_Corporate_Commercial documents must follow corporate/commercial/license sample layouts.
+D_POA_Legal_Instruments documents must follow POA/legal instruments sample layouts.
+E_Government_Personal documents must follow government/personal documents sample layouts.
+F_Tenancy_Real_Estate documents must follow tenancy/real estate sample layouts.
+G_Correspondence_Evidence documents must follow correspondence/evidence sample layouts.
+H_Medical documents must follow medical/lab/radiology/hospital sample layouts.
+I_Translator_Affairs_Internal contains translation requirements and glossary.
+Requirements / Translator Affairs:
+Use for UAE official/legal translation requirements, translator obligations, stamp/signature handling and final review checklist.
+
+Glossary / Legal Dictionary:
+Use for consistent legal terminology and UAE official terms.
+
+Company Letterhead:
+Use for final output page template, branding, header/footer/logo/frame/watermark.
+
+2. COLLECTION-FIRST RULE
+
+For each job:
+- Identify the document type.
+- Select the matching collection.
+- Use closest matching samples from that collection as the reference for the same document type.
+- Use the collection for wording style, terminology, field order, section order, table logic, stamp/signature wording, layout pattern, font size/style, heading placement, table borders/colors and safe formatting style.
+- Do not invent a layout from scratch when a matching collection sample exists.
+
+Do not copy:
+- old facts;
+- names;
+- amounts;
+- dates;
+- sample-specific stamps;
+- OCR errors;
+- wrong RTL;
+- scanned backgrounds;
+- screenshots;
+- phone/desktop/PDF viewer backgrounds;
+- corrupted formatting;
+- unrelated columns/boxes;
+- visual artifacts.
+
+3. LEGAL TRANSLATION STANDARD
+
+Translate only visible/readable text.
+Do not guess, invent, add, omit, summarize or alter legal meaning.
+Mark unclear, unreadable, cut-off, damaged, blank, unsigned, missing or hidden parts in brackets.
+Preserve all names, dates, IDs, passport numbers, Emirates ID numbers, case numbers, cheque numbers, references, invoices, account numbers, phone numbers, emails, addresses, amounts, signatures, stamps, seals, tables, headings and page order.
+
+4. ARABIC RTL RULE
+
+Any Arabic text anywhere in Word/PDF must use true RTL/bidirectional direction.
+Arabic body text must start from the right and be right-aligned.
+If source LTR body text is left-aligned, mirror it into Arabic right alignment.
+Arabic table cells must be RTL/right-aligned where appropriate.
+Centered headings may remain centered when the source/sample uses centered headings.
+Do not fake RTL using spaces or tabs.
+Do not insert Unicode direction markers such as LRI, PDI, RLI, FSI, RLM or LRM.
+
+5. ARABIC NAMES AND AMOUNTS
+
+When target language is Arabic:
+- transliterate/translate personal names, company names, party names and place names into Arabic only;
+- do not keep English names in parentheses unless user explicitly requests bilingual names;
+- write monetary amounts in Arabic legal wording where appropriate;
+- preserve identifiers exactly.
+
+Example:
+AED 50,000/- → مبلغ 50,000/- درهم إماراتي (خمسون ألف درهم إماراتي)
+
+6. LETTERHEAD AND FRAME
+
+When company letterhead is requested:
+- preserve logo, header, footer, watermark, colors, contact details and frame;
+- keep all text/tables/stamps/signature notes inside the frame;
+- right padding minimum 0.25 cm;
+- left padding minimum 0.25 cm;
+- top padding minimum 1 cm;
+- bottom padding minimum 1 cm;
+- title and first line must start at least 1 cm below the top inner frame;
+- no text/table/bullet/line may touch or cross the frame.
+If content does not fit, continue on a new page or split tables. Never overflow.
+
+7. MATCHING SAMPLE FORMAT
+
+Mirror from matching samples where safe:
+- font family;
+- font size;
+- heading size/style;
+- alignment/placement logic;
+- paragraph spacing;
+- table structure;
+- table borders;
+- table shading/colors;
+- signature/stamp block location;
+- field order.
+
+Do not mirror page count.
+Do not create blank pages to match samples.
+Do not repeat empty letterhead pages.
+
+8. PAGE RULE
+
+Page count must be based on actual translated content only.
+Each Word page must contain real translated content, a continuation table, a necessary translator note, a signature/stamp section or a requested original page.
+If a page is empty, remove it before delivery.
+Do not add page breaks unless content continues.
+
+9. TABLES
+
+Tables must be editable tables unless user asks otherwise.
+Tables must fit inside the frame safe area.
+If a table is too wide:
+- reduce font moderately but keep readable;
+- reduce padding;
+- split the table;
+- continue on a new page;
+- use landscape only if necessary and allowed.
+Never overflow outside the frame.
+
+10. WORD OUTPUT
+
+Create editable Word text/tables.
+Create the Word file correctly from the start using native paragraph/table formatting.
+Do not run post-processing DOCX patch scripts.
+Do not modify DOCX XML after generation.
+Do not use Python patch scripts.
+Deliver only a DOCX that opens normally in Microsoft Word and contains actual translated content.
+If PDF is requested, generate it from the openable Word file.
+
+11. STAMPS / SIGNATURES / SEALS
+
+Place descriptions in the same approximate logical location.
+
+Arabic notes:
+[يوجد توقيع ظاهر]
+[يوجد ختم ظاهر]
+[يوجد ختم/خاتم ظاهر]
+[توجد بصمة ظاهرة]
+[خانة التوقيع فارغة]
+[موضع الختم فارغ]
+[خانة الشاهد فارغة]
+[نص بخط اليد غير واضح]
+
+English notes:
+[Visible signature appears]
+[Visible official stamp appears]
+[Visible seal appears]
+[Visible fingerprint appears]
+[Signature field is blank]
+[Stamp area is blank]
+[Witness field is blank]
+[Handwritten text unclear]
+
+12. FINAL QUALITY CONTROL
+
+Before delivery verify:
+- correct document type;
+- correct collection;
+- no unrelated collection;
+- all visible text translated;
+- no invented facts;
+- Arabic true RTL;
+- Arabic right-aligned;
+- no English names in Arabic unless requested;
+- identifiers preserved;
+- amounts formatted correctly;
+- all content inside frame;
+- no table overflow;
+- no blank pages;
+- clean background;
+- editable Word;
+- Word opens normally;
+- PDF from openable Word if requested.
+
+If any item fails, regenerate before delivery.
