@@ -13,10 +13,6 @@ services:
     dockerContext: ./backend
     healthCheckPath: /health
     autoDeploy: true
-    disk:
-      name: moajam-storage
-      mountPath: /app/storage
-      sizeGB: 5
     envVars:
       - key: ENV
         value: production
@@ -38,6 +34,8 @@ services:
         sync: false
       - key: CORS_ORIGINS
         value: '["https://moajamalmaani.com","https://www.moajamalmaani.com"]'
+      - key: WP_BASE_URL
+        value: https://moajamalmaani.com
       - key: COMPANY_NAME
         value: Moajam Almaani
       - key: COMPANY_NAME_AR

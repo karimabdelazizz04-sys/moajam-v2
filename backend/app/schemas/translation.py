@@ -12,6 +12,8 @@ class TranslationJobOut(BaseModel):
     client_id: int | None = None
     client_name: str | None = None
     source_filename: str
+    source_file_url: str
+    output_url: str | None = None
     source_language: str
     target_language: str
     legal_domain: str | None = None

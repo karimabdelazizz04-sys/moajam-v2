@@ -107,8 +107,8 @@ add_shortcode('moajam_translator_dashboard', function () {
                 return;
             }
             jobsBody.innerHTML = data.data.map(function (job) {
-                const dl = job.status === 'done'
-                    ? '<a href="' + ajaxUrl + '?action=moajam_t_download&job_id=' + encodeURIComponent(job.id) + '&_ajax_nonce=' + nonce + '" target="_blank">تحميل</a>'
+                const dl = (job.status === 'done' && job.output_url)
+                    ? '<a href="' + job.output_url + '" target="_blank">تحميل</a>'
                     : '-';
                 return '<tr><td>' + job.source_filename + '</td><td>' + (job.client_name || '-') + '</td>'
                     + '<td>' + (job.price != null ? job.price : '-') + '</td>'
@@ -177,6 +177,23 @@ function moajam_t_current_identifier() {
     return wp_get_current_user()->user_login;
 }
 
+/**
+ * Save an uploaded $_FILES entry straight into this site's Media Library and
+ * return its permanent URL. This is the WordPress side of keeping Render
+ * stateless - the source file lives here, Render only ever gets the URL.
+ */
+function moajam_sideload_uploaded_file(array $file) {
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+
+    $attachment_id = media_handle_upload('file', 0);
+    if (is_wp_error($attachment_id)) {
+        return $attachment_id;
+    }
+    return wp_get_attachment_url($attachment_id);
+}
+
 add_action('wp_ajax_moajam_t_create_job', function () {
     moajam_t_check_access();
 
@@ -189,20 +206,24 @@ add_action('wp_ajax_moajam_t_create_job', function () {
         wp_send_json_error(['message' => 'نوع الملف غير مسموح'], 400);
     }
 
-    $result = Moajam_Api_Client::create_translation_job(
-        $_FILES['file']['tmp_name'],
-        $_FILES['file']['name'],
-        [
-            'target_language' => sanitize_text_field($_POST['target_language'] ?? 'Arabic'),
-            'legal_domain'    => sanitize_text_field($_POST['legal_domain'] ?? ''),
-            'client_name'     => sanitize_text_field($_POST['client_name'] ?? ''),
-            'client_email'    => sanitize_email($_POST['client_email'] ?? ''),
-            'client_phone'    => sanitize_text_field($_POST['client_phone'] ?? ''),
-            'price'           => sanitize_text_field($_POST['price'] ?? ''),
-            'created_by'      => moajam_t_current_identifier(),
-            'source_language' => 'auto-detect',
-        ]
-    );
+    $source_filename = sanitize_file_name($_FILES['file']['name']);
+    $media_url = moajam_sideload_uploaded_file($_FILES['file']);
+    if (is_wp_error($media_url)) {
+        wp_send_json_error(['message' => $media_url->get_error_message()], 500);
+    }
+
+    $result = Moajam_Api_Client::create_translation_job([
+        'source_file_url' => $media_url,
+        'source_filename' => $source_filename,
+        'target_language' => sanitize_text_field($_POST['target_language'] ?? 'Arabic'),
+        'legal_domain'    => sanitize_text_field($_POST['legal_domain'] ?? ''),
+        'client_name'     => sanitize_text_field($_POST['client_name'] ?? ''),
+        'client_email'    => sanitize_email($_POST['client_email'] ?? ''),
+        'client_phone'    => sanitize_text_field($_POST['client_phone'] ?? ''),
+        'price'           => sanitize_text_field($_POST['price'] ?? ''),
+        'created_by'      => moajam_t_current_identifier(),
+        'source_language' => 'auto-detect',
+    ]);
 
     if (isset($result['error'])) {
         wp_send_json_error(['message' => $result['error']], $result['code']);

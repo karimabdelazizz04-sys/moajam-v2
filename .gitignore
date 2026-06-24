@@ -2,11 +2,8 @@ __pycache__/
 *.pyc
 .env
 backend/.env
-backend/storage/uploads/*
-backend/storage/outputs/*
-backend/storage/invoices/*
-!backend/storage/**/.gitkeep
 backend/moajam.db
+backend/knowledge/.knowledge_index.json
 .venv/
 .venv*/
 venv/

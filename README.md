@@ -42,9 +42,9 @@ moajam-almaani-v2/
    - `POST /api/v1/auth/login` — تسجيل دخول الأدمن (JWT).
    - أمان: الترجمة محمية بـ `X-API-Key`، والمحاسبة/الفواتير محمية بـ JWT.
 
-2. **WordPress snippet** (`wordpress-snippet/moajam-translation-snippet.php`): شورت كود `[moajam_translate_form]` لرفع ملف + متابعة حالة + تحميل، عبر admin-ajax.php (المفتاح يفضل في wp-config.php فقط).
+2. **WordPress snippet القديم** (`wordpress-snippet/moajam-translation-snippet.php`) — **متروك لأغراض تاريخية بس**، الاستخدام الفعلي دلوقتي هو الـ WordPress Plugin في بند 4.
 
-3. **render.yaml**: Blueprint جاهز لنشر الباك إند + قاعدة بيانات Postgres على Render، مع Disk دائم لـ `storage/` (الرفعات والمخرجات والفواتير ما تضيعش بين الـ deployments).
+3. **render.yaml**: Blueprint جاهز لنشر الباك إند + قاعدة بيانات Postgres على Render. **Render نفسه stateless تمامًا الآن** — مفيش Disk، ومفيش ملف بيُخزَّن على Render محليًا أصلًا (راجع بند 6).
 
 4. **WordPress Plugin** (`wordpress-plugin/moajam-platform/`) — بديل كامل للـ snippet القديم، فيه لوحتين (العميل لا يدخل على النظام نهائيًا - المترجم هو اللي بيسجّل بيانات العميل والسعر بدلًا منه):
    - `[moajam_translator_dashboard]` — لرول WordPress اسمه "Moajam Translator"، **كل مترجم له يوزر WordPress مستقل**: يرفع الملف، يكتب اسم/بريد/تليفون العميل، يحدد السعر المتفق عليه، يتابع طلباته الشخصية فقط (مفلترة تلقائيًا باسم المستخدم بتاعه)، يشوف إشعاراته، ويحمّل الـ DOCX.
@@ -58,6 +58,19 @@ moajam-almaani-v2/
    - **Review workflow** — `PATCH /erp/jobs/{id}/review` لتعيين مراجع وتحديد حالة المراجعة (pending/approved/rejected)، وبيولّد إشعار تلقائي للمراجع وللمترجم.
    - **Analytics** — `GET /erp/analytics/summary` تجميع الطلبات/الإيراد لكل مترجم وكل عميل، بفلترة بتاريخ.
    - **Notifications** — إشعارات تلقائية عند اكتمال/فشل الترجمة وعند دفع الفاتورة، تظهر في لوحتي المترجم والأدمن.
+
+6. **Render stateless 100%** — مفيش ملف واحد بيتخزن على Render:
+   - المترجم برفع الملف من لوحته → البلجن يحفظه فورًا في **WordPress Media Library** (`media_handle_upload`) → يبعت للباك إند **رابط الملف فقط** (`source_file_url`)، مش الملف نفسه.
+   - الباك إند بينزّل الملف من الرابط في الذاكرة/ملف مؤقت، يترجم، يبني DOCX في ملف مؤقت، **يرفعه فورًا على WordPress** عبر REST endpoint جديد `/wp-json/moajam/v1/media` (محمي بنفس `X-API-Key`)، وبعدين **يمسح كل الملفات المؤقتة**. الناتج النهائي بيتخزن في `job.output_url` (رابط WordPress دائم).
+   - نفس المنطق على فواتير PDF: `pdf_url` بدل `pdf_path`.
+   - لو عملت `redeploy` على Render، مفيش حاجة تضيع لأن مفيش ملف أصلًا على Render.
+   - الملف الجديد `wordpress-plugin/moajam-platform/includes/rest-media.php` هو المسؤول عن استقبال الملفات من الباك إند وحفظها في Media Library.
+
+7. **نظام RAG على `backend/knowledge/`** (`app/services/knowledge_service.py`):
+   - بيقرا كل ملف PDF/DOCX/TXT تحت `backend/knowledge/` (فيها فعلاً عينات لكل الكولكشنات: `A_Banking_Financial.pdf`... `I_Translator_Affairs_Internal.pdf`، وملفات عامة زي `LETTERHEAD_MASTER.pdf` و `01_ALL_IN_ONE_KNOWLEDGE_MASTER_RULES.txt`).
+   - **تصنيف تلقائي للكولكشن**: من اسم الملف لو مطابق لكود كولكشن، وإلا بمطابقة كلمات مفتاحية، والملفات العامة (master rules / letterhead / override) بتتعلّم `GLOBAL` وتتضاف لكل سياق بحث.
+   - **Embeddings index**: `python -m scripts.build_knowledge_index` يقسّم كل ملف لقطع نصية، يعمل embeddings بـ OpenAI (`text-embedding-3-small`)، ويخزنهم في `backend/knowledge/.knowledge_index.json` (غير متتبّع في git، ومفيش بناء أوتوماتيكي وقت تشغيل السيرفر لتجنّب تكلفة/تأخير عند كل cold start).
+   - **وقت كل ترجمة جديدة**: `openai_service.translate_text` بينده على `route_collection()` (تصنيف بـ OpenAI + fallback كلمات مفتاحية) ثم `retrieve_context()` (أقرب عيّنات بالـ cosine similarity) ويحقن النتيجة كـ `collection_context` في `get_translation_prompt()` من `translation_prompt.py` — يعني الترجمة دلوقتي مبنية على نفس منطق الـ Custom GPT (system prompt + sample context + النص الأصلي).
 
 ---
 
@@ -82,25 +95,31 @@ moajam-almaani-v2/
   - (اختياري) `PAYMOB_API_KEY`, `PAYMOB_INTEGRATION_ID`
 - `SECRET_KEY` و `API_KEY` بيتولّدوا أوتوماتيك (`generateValue: true`) — خد قيمة `API_KEY` بعد التوليد وحطها في WordPress.
 
-### 4. أول Migration + أول مستخدم أدمن + Chart of Accounts
+### 4. أول Migration + أول مستخدم أدمن + Chart of Accounts + RAG index
 من Render Shell (أو محليًا بـ docker compose):
 ```bash
 alembic revision --autogenerate -m "init"
 alembic upgrade head
 python -m scripts.create_admin admin "كلمة-سر-قوية"
 python -m scripts.seed_accounts
+python -m scripts.build_knowledge_index
 ```
+آخر أمر (`build_knowledge_index`) لازم تعيد تشغيله لو ضفت/عدّلت أي ملف في `backend/knowledge/`.
 
 ### 5. دومين + SSL
 Render بيوفر دومين `xxx.onrender.com` بشهادة SSL تلقائي. لو عايز `api.moajamalmaani.com`، ضيفه من Render → Settings → Custom Domain، ووجّه CNAME من عندك.
 
-### 6. فعّل الـ WordPress Snippet
+### 6. فعّل WordPress Plugin (مش الـ snippet القديم)
 في `wp-config.php`:
 ```php
 define('MOAJAM_API_BASE_URL', 'https://api.moajamalmaani.com');
 define('MOAJAM_API_KEY', 'القيمة-اللي-أخدتها-من-Render-Environment');
 ```
-ثم بلجن **Code Snippets** → snippet جديد بمحتوى `wordpress-snippet/moajam-translation-snippet.php` → فعّله، وضيف `[moajam_translate_form]` في أي صفحة.
+ارفع مجلد `wordpress-plugin/moajam-platform` إلى `wp-content/plugins/` وفعّله من wp-admin → Plugins. ده هيسجّل تلقائيًا REST endpoint جديد (`/wp-json/moajam/v1/media`) اللي الباك إند يستخدمه لرفع الملفات المترجمة، فمحتاج كمان تضيف على الباك إند في Render:
+```
+WP_BASE_URL=https://moajamalmaani.com
+```
+(موجودة في `render.yaml` لكن لو الدومين اختلف لازم تحدّثها).
 
 ### 7. اختبر الـ Flow كامل
 - رفّع ملف docx تجريبي من الصفحة، شوف الترجمة، نزّل الناتج.

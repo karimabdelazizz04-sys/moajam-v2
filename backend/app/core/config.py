@@ -32,11 +32,14 @@ class Settings(BaseSettings):
     # CORS - the WordPress site(s) allowed to call this API
     CORS_ORIGINS: list[str] = ["https://moajamalmaani.com"]
 
-    # Storage
-    UPLOAD_DIR: str = "storage/uploads"
-    OUTPUT_DIR: str = "storage/outputs"
-    INVOICE_DIR: str = "storage/invoices"
-    MAX_UPLOAD_SIZE_MB: int = 20
+    # WordPress is the only durable file store. Render itself stays stateless:
+    # receive a source file URL -> translate -> push the result back to WP -> done.
+    WP_BASE_URL: str = ""
+    MAX_UPLOAD_SIZE_MB: int = 512
+
+    # RAG knowledge base (backend/knowledge/) used to ground translations in
+    # matched-collection samples, on top of the OpenAI vector stores.
+    KNOWLEDGE_DIR: str = "knowledge"
 
     # Invoicing
     COMPANY_NAME: str = "Moajam Almaani"

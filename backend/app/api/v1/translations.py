@@ -1,42 +1,56 @@
-import shutil
+import tempfile
 import uuid
+from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, verify_api_key
-from app.core.config import get_settings
 from app.models.client import Client
 from app.models.erp import Notification
 from app.models.translation_job import JobStatus, TranslationJob
 from app.schemas.translation import TranslationJobCreateResponse, TranslationJobOut
+from app.services.docx_service import build_translated_docx
+from app.services.file_extract_service import extract_text
 from app.services.invoicing_service import create_invoice_for_translation_job
 from app.services.openai_service import translate_text
-from app.services.docx_service import build_translated_docx
-from app.services.file_extract_service import UnsupportedFileType, extract_text
+from app.services.wordpress_service import download_source_file, upload_media_to_wordpress
 
 router = APIRouter(
     prefix="/translations",
     tags=["translations"],
     dependencies=[Depends(verify_api_key)],
 )
-settings = get_settings()
 
 ALLOWED_SUFFIXES = {".docx", ".pdf", ".txt"}
 
 
 def _run_translation_job(job_id: str, db: Session) -> None:
+    """Stateless pipeline: download the source from WordPress, translate it
+    fully in memory/temp-files, push the result back to WordPress, and leave
+    nothing behind on Render's own disk. Safe to survive a redeploy mid-flight
+    only insofar as the job record itself lives in Postgres, not local files.
+    """
     job = db.get(TranslationJob, job_id)
     if not job:
         return
+
+    suffix = Path(job.source_filename).suffix.lower() or ".txt"
+    source_tmp_path: str | None = None
+    output_tmp_path: str | None = None
 
     try:
         job.status = JobStatus.PROCESSING
         db.commit()
 
-        source_text = extract_text(job.source_path)
+        source_bytes = download_source_file(job.source_file_url)
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as source_tmp:
+            source_tmp.write(source_bytes)
+            source_tmp_path = source_tmp.name
+
+        source_text = extract_text(source_tmp_path)
         translated_text = translate_text(
             source_text,
             source_language=job.source_language,
@@ -44,10 +58,19 @@ def _run_translation_job(job_id: str, db: Session) -> None:
             legal_domain=job.legal_domain,
         )
 
-        output_path = str(Path(settings.OUTPUT_DIR) / f"{job.id}.docx")
-        build_translated_docx(translated_text, output_path, target_language=job.target_language)
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as output_tmp:
+            output_tmp_path = output_tmp.name
+        build_translated_docx(translated_text, output_tmp_path, target_language=job.target_language)
+        output_bytes = Path(output_tmp_path).read_bytes()
 
-        job.output_path = output_path
+        output_filename = f"translated_{Path(job.source_filename).stem}.docx"
+        media = upload_media_to_wordpress(
+            output_bytes,
+            output_filename,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+
+        job.output_url = media["url"]
         job.status = JobStatus.DONE
         db.commit()
         create_invoice_for_translation_job(db, job)
@@ -74,10 +97,11 @@ def _run_translation_job(job_id: str, db: Session) -> None:
                 )
             )
     finally:
-        from datetime import datetime
-
         job.completed_at = datetime.utcnow()
         db.commit()
+        for tmp_path in (source_tmp_path, output_tmp_path):
+            if tmp_path:
+                Path(tmp_path).unlink(missing_ok=True)
 
 
 def _resolve_client_id(
@@ -113,7 +137,8 @@ def _resolve_client_id(
 @router.post("", response_model=TranslationJobCreateResponse, status_code=201)
 def create_translation_job(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
+    source_file_url: str = Form(...),
+    source_filename: str = Form(...),
     source_language: str = Form("auto-detect"),
     target_language: str = Form("Arabic"),
     legal_domain: str | None = Form(None),
@@ -125,24 +150,22 @@ def create_translation_job(
     price: float | None = Form(None),
     db: Session = Depends(get_db),
 ):
+    """Create a translation job from a file the caller already uploaded to
+    WordPress's Media Library. Render only ever receives a URL here - never
+    the file bytes directly - so it never has anything of its own to lose on
+    redeploy.
+    """
     client_id = _resolve_client_id(db, client_id, client_email, client_name, client_phone)
 
-    suffix = Path(file.filename or "").suffix.lower()
+    suffix = Path(source_filename).suffix.lower()
     if suffix not in ALLOWED_SUFFIXES:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {suffix}")
 
-    job_id = str(uuid.uuid4())
-    upload_path = Path(settings.UPLOAD_DIR) / f"{job_id}{suffix}"
-    upload_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with upload_path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
     job = TranslationJob(
-        id=job_id,
+        id=str(uuid.uuid4()),
         client_id=client_id,
-        source_filename=file.filename or "document",
-        source_path=str(upload_path),
+        source_filename=source_filename,
+        source_file_url=source_file_url,
         source_language=source_language,
         target_language=target_language,
         legal_domain=legal_domain,
@@ -153,7 +176,7 @@ def create_translation_job(
     db.add(job)
     db.commit()
 
-    background_tasks.add_task(_run_translation_job, job_id, db)
+    background_tasks.add_task(_run_translation_job, job.id, db)
 
     return TranslationJobCreateResponse(job_id=job.id, status=job.status)
 
@@ -188,15 +211,13 @@ def get_translation_job(job_id: str, db: Session = Depends(get_db)):
 
 @router.get("/{job_id}/download")
 def download_translation(job_id: str, db: Session = Depends(get_db)):
+    """The translated file lives on WordPress, not on Render - this just
+    redirects to the permanent WordPress Media Library URL.
+    """
     job = db.get(TranslationJob, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    if job.status != JobStatus.DONE or not job.output_path:
+    if job.status != JobStatus.DONE or not job.output_url:
         raise HTTPException(status_code=409, detail=f"Job is not ready yet (status: {job.status.value})")
 
-    filename = f"translated_{Path(job.source_filename).stem}.docx"
-    return FileResponse(
-        job.output_path,
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    )
+    return RedirectResponse(job.output_url)

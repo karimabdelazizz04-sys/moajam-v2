@@ -22,8 +22,10 @@ class TranslationJob(Base):
     client_id: Mapped[int | None] = mapped_column(ForeignKey("clients.id"), nullable=True)
 
     source_filename: Mapped[str] = mapped_column(String(255))
-    source_path: Mapped[str] = mapped_column(String(500))
-    output_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Permanent WordPress Media Library URL of the original upload - Render never stores this file.
+    source_file_url: Mapped[str] = mapped_column(String(1000))
+    # Permanent WordPress Media Library URL of the finished translated DOCX.
+    output_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     source_language: Mapped[str] = mapped_column(String(32), default="auto")
     target_language: Mapped[str] = mapped_column(String(32), default="ar")

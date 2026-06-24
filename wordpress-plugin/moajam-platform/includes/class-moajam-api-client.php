@@ -61,29 +61,17 @@ class Moajam_Api_Client {
     // Translation jobs
     // -------------------------------------------------------------------
 
-    public static function create_translation_job($file_tmp_path, $file_name, $fields) {
-        $boundary = wp_generate_password(24, false);
-        $eol = "\r\n";
-        $body = '';
-
-        foreach ($fields as $name => $value) {
-            if ($value === null || $value === '') {
-                continue;
-            }
-            $body .= '--' . $boundary . $eol;
-            $body .= 'Content-Disposition: form-data; name="' . $name . '"' . $eol . $eol;
-            $body .= $value . $eol;
-        }
-
-        $body .= '--' . $boundary . $eol;
-        $body .= 'Content-Disposition: form-data; name="file"; filename="' . basename($file_name) . '"' . $eol;
-        $body .= 'Content-Type: application/octet-stream' . $eol . $eol;
-        $body .= file_get_contents($file_tmp_path) . $eol;
-        $body .= '--' . $boundary . '--' . $eol;
-
+    /**
+     * Create a translation job from a file already sitting in WordPress's own
+     * Media Library (see moajam_sideload_to_media() in dashboard-translator.php).
+     * Render only ever receives the URL, never the file bytes - this is the
+     * whole point of keeping Render stateless.
+     */
+    public static function create_translation_job($fields) {
+        $fields = array_filter($fields, fn($v) => $v !== null && $v !== '');
         return self::request('POST', '/api/v1/translations', [
-            'headers' => ['Content-Type' => 'multipart/form-data; boundary=' . $boundary],
-            'body'    => $body,
+            'headers' => ['Content-Type' => 'application/x-www-form-urlencoded'],
+            'body'    => $fields,
             'timeout' => 60,
         ]);
     }

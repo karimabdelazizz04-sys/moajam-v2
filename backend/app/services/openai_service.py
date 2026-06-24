@@ -1,6 +1,7 @@
 from openai import OpenAI
 
 from app.core.config import get_settings
+from app.services.knowledge_service import retrieve_context, route_collection
 from app.services.translation_prompt import get_translation_prompt
 
 settings = get_settings()
@@ -16,12 +17,21 @@ def translate_text(
 ) -> str:
     """Send extracted document text to OpenAI and return the translated text.
 
-    Uses the file_search tool against the firm's legal vector stores (9 collections)
-    so the model can ground terminology/layout in the matched knowledge collection.
+    Runs a RAG pass first: classify the document into one of the 9 knowledge
+    collections, retrieve the closest-matching sample(s) from
+    backend/knowledge/, and feed that as grounding context alongside the
+    master system prompt. Also uses the file_search tool against the firm's
+    OpenAI vector stores for additional terminology/layout grounding.
     """
+    collection = route_collection(text)
+    sample_context = retrieve_context(text, collection)
+
     task_context = f"Source language: {source_language}\nTarget language: {target_language}"
     if legal_domain:
         task_context += f"\nDeclared document/legal domain hint: {legal_domain}"
+    task_context += f"\nMatched knowledge collection: {collection}"
+    if sample_context:
+        task_context += f"\n\nRetrieved reference samples:\n{sample_context}"
 
     system = get_translation_prompt(task_context)
 

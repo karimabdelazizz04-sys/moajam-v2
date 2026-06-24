@@ -1,23 +1,23 @@
 import itertools
+import tempfile
 from datetime import date
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
-from app.core.config import get_settings
 from app.models.client import Client
 from app.models.erp import Notification
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from app.schemas.invoice import InvoiceCreate, InvoiceOut, InvoiceUpdateStatus
 from app.services.invoice_pdf_service import build_invoice_pdf
 from app.services.invoicing_service import post_invoice_payment_to_ledger
+from app.services.wordpress_service import upload_media_to_wordpress
 
 router = APIRouter(prefix="/invoices", tags=["invoices"], dependencies=[Depends(get_current_user)])
-settings = get_settings()
 
 
 def _next_invoice_number(db: Session) -> str:
@@ -97,14 +97,25 @@ def update_invoice_status(invoice_id: int, payload: InvoiceUpdateStatus, db: Ses
 
 @router.post("/{invoice_id}/pdf", response_model=InvoiceOut)
 def generate_invoice_pdf(invoice_id: int, db: Session = Depends(get_db)):
+    """Render the invoice to PDF in a scratch temp file, push it straight to
+    the WordPress Media Library, then discard the local copy - Render keeps
+    no durable file of its own.
+    """
     invoice = db.get(Invoice, invoice_id)
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
-    output_path = str(Path(settings.INVOICE_DIR) / f"{invoice.number}.pdf")
-    build_invoice_pdf(invoice, output_path)
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        build_invoice_pdf(invoice, tmp_path)
+        pdf_bytes = Path(tmp_path).read_bytes()
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
 
-    invoice.pdf_path = output_path
+    media = upload_media_to_wordpress(pdf_bytes, f"{invoice.number}.pdf", "application/pdf")
+
+    invoice.pdf_url = media["url"]
     db.commit()
     db.refresh(invoice)
     return invoice
@@ -112,10 +123,11 @@ def generate_invoice_pdf(invoice_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{invoice_id}/download")
 def download_invoice_pdf(invoice_id: int, db: Session = Depends(get_db)):
+    """The invoice PDF lives on WordPress, not on Render - redirect there."""
     invoice = db.get(Invoice, invoice_id)
-    if not invoice or not invoice.pdf_path or not Path(invoice.pdf_path).exists():
+    if not invoice or not invoice.pdf_url:
         raise HTTPException(status_code=404, detail="PDF not generated yet")
-    return FileResponse(invoice.pdf_path, filename=f"{invoice.number}.pdf", media_type="application/pdf")
+    return RedirectResponse(invoice.pdf_url)
 
 
 @router.delete("/{invoice_id}", status_code=204)

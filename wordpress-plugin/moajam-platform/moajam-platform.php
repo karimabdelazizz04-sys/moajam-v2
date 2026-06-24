@@ -20,6 +20,7 @@ define('MOAJAM_PLATFORM_DIR', plugin_dir_path(__FILE__));
 define('MOAJAM_PLATFORM_URL', plugin_dir_url(__FILE__));
 
 require_once MOAJAM_PLATFORM_DIR . 'includes/class-moajam-api-client.php';
+require_once MOAJAM_PLATFORM_DIR . 'includes/rest-media.php';
 require_once MOAJAM_PLATFORM_DIR . 'includes/dashboard-translator.php';
 require_once MOAJAM_PLATFORM_DIR . 'includes/dashboard-admin.php';
 

@@ -35,7 +35,8 @@ class Invoice(Base):
     tax_rate: Mapped[float] = mapped_column(Float, default=0.0)  # e.g. 0.14 for 14% VAT
     notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
-    pdf_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Permanent WordPress Media Library URL of the generated invoice PDF - Render never stores this file.
+    pdf_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     client = relationship("Client", back_populates="invoices")

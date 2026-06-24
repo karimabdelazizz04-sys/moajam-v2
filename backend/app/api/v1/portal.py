@@ -1,7 +1,5 @@
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, verify_api_key
@@ -37,7 +35,8 @@ def list_invoices_for_portal(
 
 @router.get("/invoices/{invoice_id}/download")
 def download_invoice_for_portal(invoice_id: int, db: Session = Depends(get_db)):
+    """The invoice PDF lives on WordPress, not on Render - redirect there."""
     invoice = db.get(Invoice, invoice_id)
-    if not invoice or not invoice.pdf_path or not Path(invoice.pdf_path).exists():
+    if not invoice or not invoice.pdf_url:
         raise HTTPException(status_code=404, detail="PDF not generated yet")
-    return FileResponse(invoice.pdf_path, filename=f"{invoice.number}.pdf", media_type="application/pdf")
+    return RedirectResponse(invoice.pdf_url)
