@@ -1,15 +1,16 @@
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
-from openai import OpenAI
+from anthropic import Anthropic
 
 from app.core.config import get_settings
 from app.services.file_extract_service import extract_text
 
 settings = get_settings()
 
-_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+_client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 COLLECTIONS = {
     "A_Banking_Financial": "cheques, returned cheque memos, returned cheque e-advice, bank return "
@@ -40,7 +41,12 @@ GLOBAL_COLLECTION = "GLOBAL"
 
 INDEX_PATH = Path(settings.KNOWLEDGE_DIR) / ".knowledge_index.json"
 CHUNK_SIZE = 1500  # characters per chunk
-EMBEDDING_MODEL = "text-embedding-3-small"
+
+_TOKEN_RE = re.compile(r"\w+", re.UNICODE)
+
+
+def _tokenize(text: str) -> list[str]:
+    return _TOKEN_RE.findall(text.lower())
 
 
 def _chunk_text(text: str, size: int = CHUNK_SIZE) -> list[str]:
@@ -77,9 +83,10 @@ def _guess_collection_for_file(filename: str, text: str) -> str:
 
 
 def build_index() -> dict:
-    """Extract every file under KNOWLEDGE_DIR, chunk it, embed every chunk
-    with OpenAI, classify it into a collection, and persist the result so
-    requests don't need to re-embed the knowledge base every time.
+    """Extract every file under KNOWLEDGE_DIR, chunk it, and classify it into
+    a collection, then persist the result so requests don't need to re-parse
+    the knowledge base every time. No embeddings/API calls involved - purely
+    local text extraction and keyword classification.
     """
     knowledge_dir = Path(settings.KNOWLEDGE_DIR)
     entries = []
@@ -99,11 +106,6 @@ def build_index() -> dict:
             for chunk in _chunk_text(text):
                 entries.append({"file": path.name, "collection": collection, "text": chunk})
 
-    if entries:
-        embeddings = _client.embeddings.create(model=EMBEDDING_MODEL, input=[e["text"] for e in entries])
-        for entry, emb in zip(entries, embeddings.data):
-            entry["embedding"] = emb.embedding
-
     INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
     INDEX_PATH.write_text(json.dumps(entries, ensure_ascii=False), encoding="utf-8")
     return {"chunks_indexed": len(entries)}
@@ -115,35 +117,31 @@ def _load_index() -> list[dict]:
     return json.loads(INDEX_PATH.read_text(encoding="utf-8"))
 
 
-def _cosine_similarity(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
-    norm_a = sum(x * x for x in a) ** 0.5
-    norm_b = sum(y * y for y in b) ** 0.5
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return dot / (norm_a * norm_b)
+def _keyword_score(query_tokens: set[str], text: str) -> int:
+    chunk_counts = Counter(_tokenize(text))
+    return sum(chunk_counts[t] for t in query_tokens)
 
 
 def route_collection(source_text: str) -> str:
     """Classify the document into one of the 9 knowledge collections.
 
-    Uses a lightweight OpenAI classification call grounded in the same
+    Uses a lightweight Claude classification call grounded in the same
     COLLECTION ROUTING rules as the master translation prompt; falls back to
     keyword matching if the call fails (e.g. no key configured yet).
     """
     excerpt = source_text[:3000]
     try:
         listing = "\n".join(f"- {code}: {desc}" for code, desc in COLLECTIONS.items())
-        response = _client.responses.create(
-            model=settings.OPENAI_MODEL,
-            instructions=(
+        response = _client.messages.create(
+            model=settings.ANTHROPIC_MODEL,
+            max_tokens=20,
+            system=(
                 "Classify the legal document excerpt into exactly one of these collection codes. "
                 "Reply with ONLY the collection code, nothing else.\n" + listing
             ),
-            input=excerpt,
-            max_output_tokens=20,
+            messages=[{"role": "user", "content": excerpt}],
         )
-        code = response.output_text.strip()
+        code = "".join(block.text for block in response.content if block.type == "text").strip()
         if code in COLLECTIONS:
             return code
     except Exception:
@@ -155,6 +153,10 @@ def retrieve_context(source_text: str, collection: str | None = None, top_k: int
     """Return the top-k most relevant knowledge chunks as plain text, scoped
     to the matched collection plus anything tagged GLOBAL (letterhead/frame
     and master formatting rules, which apply to every document type).
+
+    Relevance is a simple keyword-overlap score between the source document
+    and each chunk (no embeddings/vector search) - cheap, local, and good
+    enough given the knowledge base is a few hundred chunks at most.
     """
     entries = _load_index()
     if not entries:
@@ -165,15 +167,10 @@ def retrieve_context(source_text: str, collection: str | None = None, top_k: int
     if not candidates:
         candidates = [e for e in entries if e["collection"] != GLOBAL_COLLECTION]
 
-    try:
-        query_embedding = (
-            _client.embeddings.create(model=EMBEDDING_MODEL, input=source_text[:3000]).data[0].embedding
-        )
-    except Exception:
+    query_tokens = set(_tokenize(source_text[:3000]))
+    if not query_tokens:
         return ""
 
-    scored = sorted(
-        candidates, key=lambda e: _cosine_similarity(e["embedding"], query_embedding), reverse=True
-    )
+    scored = sorted(candidates, key=lambda e: _keyword_score(query_tokens, e["text"]), reverse=True)
     top = scored[:top_k] + global_entries
     return "\n\n---\n\n".join(f"[Sample from {e['file']} - {e['collection']}]\n{e['text']}" for e in top)

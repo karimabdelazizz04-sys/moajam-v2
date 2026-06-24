@@ -18,16 +18,10 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./moajam.db"
 
-    # OpenAI API
-    OPENAI_API_KEY: str
-    OPENAI_MODEL: str = "gpt-5.1"
-    OPENAI_MAX_OUTPUT_TOKENS: int = 8192
-    # Comma-separated vector store IDs covering the 9 legal collections (terminology/precedent lookup)
-    OPENAI_VECTOR_STORE_IDS: str = ""
-
-    @property
-    def openai_vector_store_id_list(self) -> list[str]:
-        return [v.strip() for v in self.OPENAI_VECTOR_STORE_IDS.split(",") if v.strip()]
+    # Anthropic (Claude) API
+    ANTHROPIC_API_KEY: str
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+    ANTHROPIC_MAX_OUTPUT_TOKENS: int = 8192
 
     # CORS - the WordPress site(s) allowed to call this API
     CORS_ORIGINS: list[str] = ["https://moajamalmaani.com"]
@@ -38,7 +32,7 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 512
 
     # RAG knowledge base (backend/knowledge/) used to ground translations in
-    # matched-collection samples, on top of the OpenAI vector stores.
+    # matched-collection samples (keyword-based retrieval, no embeddings).
     KNOWLEDGE_DIR: str = "knowledge"
 
     # Invoicing

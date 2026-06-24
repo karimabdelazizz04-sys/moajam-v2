@@ -15,7 +15,7 @@ from app.schemas.translation import TranslationJobCreateResponse, TranslationJob
 from app.services.docx_service import build_translated_docx
 from app.services.file_extract_service import extract_text
 from app.services.invoicing_service import create_invoice_for_translation_job
-from app.services.openai_service import translate_text
+from app.services.claude_service import translate_text
 from app.services.wordpress_service import download_source_file, upload_media_to_wordpress
 
 router = APIRouter(

@@ -1,4 +1,4 @@
-from openai import OpenAI
+from anthropic import Anthropic
 
 from app.core.config import get_settings
 from app.services.knowledge_service import retrieve_context, route_collection
@@ -6,7 +6,7 @@ from app.services.translation_prompt import get_translation_prompt
 
 settings = get_settings()
 
-_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+_client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
 def translate_text(
@@ -15,13 +15,12 @@ def translate_text(
     target_language: str = "Arabic",
     legal_domain: str | None = None,
 ) -> str:
-    """Send extracted document text to OpenAI and return the translated text.
+    """Send extracted document text to Claude and return the translated text.
 
     Runs a RAG pass first: classify the document into one of the 9 knowledge
     collections, retrieve the closest-matching sample(s) from
     backend/knowledge/, and feed that as grounding context alongside the
-    master system prompt. Also uses the file_search tool against the firm's
-    OpenAI vector stores for additional terminology/layout grounding.
+    master system prompt.
     """
     collection = route_collection(text)
     sample_context = retrieve_context(text, collection)
@@ -35,17 +34,11 @@ def translate_text(
 
     system = get_translation_prompt(task_context)
 
-    tools = []
-    vector_store_ids = settings.openai_vector_store_id_list
-    if vector_store_ids:
-        tools.append({"type": "file_search", "vector_store_ids": vector_store_ids})
-
-    response = _client.responses.create(
-        model=settings.OPENAI_MODEL,
-        instructions=system,
-        input=text,
-        tools=tools or None,
-        max_output_tokens=settings.OPENAI_MAX_OUTPUT_TOKENS,
+    response = _client.messages.create(
+        model=settings.ANTHROPIC_MODEL,
+        max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
+        system=system,
+        messages=[{"role": "user", "content": text}],
     )
 
-    return response.output_text
+    return "".join(block.text for block in response.content if block.type == "text")

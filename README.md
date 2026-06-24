@@ -1,6 +1,6 @@
 # Moajam Almaani V2
 
-إعادة بناء كاملة للنظام: FastAPI + OpenAI API (vector store على 9 كولكشنات قانونية) + python-docx + WordPress snippet + نظام محاسبة كامل (Chart of Accounts / Journal Entries / P&L / Balance Sheet) + فوترة تلقائية + render.yaml للنشر على Render.
+إعادة بناء كاملة للنظام: FastAPI + Anthropic Claude API (RAG محلي بدون embeddings على 9 كولكشنات قانونية) + python-docx + WordPress snippet + نظام محاسبة كامل (Chart of Accounts / Journal Entries / P&L / Balance Sheet) + فوترة تلقائية + render.yaml للنشر على Render.
 
 ## هيكل المشروع
 
@@ -12,7 +12,7 @@ moajam-almaani-v2/
 │   │   ├── db/                session.py, base.py
 │   │   ├── models/            SQLAlchemy: User, Client, TranslationJob, Invoice, Accounting (ChartOfAccount/JournalEntry/JournalLine)
 │   │   ├── schemas/            Pydantic
-│   │   ├── services/          openai_service, docx_service, file_extract_service, invoice_pdf_service, invoicing_service
+│   │   ├── services/          claude_service, docx_service, file_extract_service, invoice_pdf_service, invoicing_service
 │   │   ├── api/v1/             auth, clients, invoices, translations, accounting
 │   │   ├── assets/fonts/       ضع هنا خط عربي TTF (مثلاً Noto Naskh Arabic) لإظهار العربي بشكل صحيح في الفواتير
 │   │   └── main.py
@@ -30,7 +30,7 @@ moajam-almaani-v2/
 ## اللي تم بناؤه (خلاصة)
 
 1. **Backend**: FastAPI، فيه:
-   - `POST /api/v1/translations` — رفع ملف (docx/pdf/txt)، استخراج النص، ترجمته عبر OpenAI (مع file_search على الـ vector stores الخاصة بالـ 9 كولكشنات القانونية)، وإنتاج ملف docx بـ python-docx (بدون LibreOffice).
+   - `POST /api/v1/translations` — رفع ملف (docx/pdf/txt)، استخراج النص، ترجمته عبر Claude (Anthropic) مع RAG محلي على الـ 9 كولكشنات القانونية تحت `backend/knowledge/`، وإنتاج ملف docx بـ python-docx (بدون LibreOffice).
    - `GET /api/v1/translations/{job_id}` و `/download` — حالة وتحميل الترجمة.
    - عند اكتمال الترجمة، لو الطلب مرتبط بعميل، يتولّد **تلقائيًا** فاتورة Draft مربوطة بالـ job.
    - `POST/GET/PATCH/DELETE /api/v1/clients` — إدارة العملاء.
@@ -66,20 +66,19 @@ moajam-almaani-v2/
    - لو عملت `redeploy` على Render، مفيش حاجة تضيع لأن مفيش ملف أصلًا على Render.
    - الملف الجديد `wordpress-plugin/moajam-platform/includes/rest-media.php` هو المسؤول عن استقبال الملفات من الباك إند وحفظها في Media Library.
 
-7. **نظام RAG على `backend/knowledge/`** (`app/services/knowledge_service.py`):
+7. **نظام RAG على `backend/knowledge/`** (`app/services/knowledge_service.py`) — محلي بالكامل، بدون embeddings ولا أي API مدفوع للفهرسة:
    - بيقرا كل ملف PDF/DOCX/TXT تحت `backend/knowledge/` (فيها فعلاً عينات لكل الكولكشنات: `A_Banking_Financial.pdf`... `I_Translator_Affairs_Internal.pdf`، وملفات عامة زي `LETTERHEAD_MASTER.pdf` و `01_ALL_IN_ONE_KNOWLEDGE_MASTER_RULES.txt`).
    - **تصنيف تلقائي للكولكشن**: من اسم الملف لو مطابق لكود كولكشن، وإلا بمطابقة كلمات مفتاحية، والملفات العامة (master rules / letterhead / override) بتتعلّم `GLOBAL` وتتضاف لكل سياق بحث.
-   - **Embeddings index**: `python -m scripts.build_knowledge_index` يقسّم كل ملف لقطع نصية، يعمل embeddings بـ OpenAI (`text-embedding-3-small`)، ويخزنهم في `backend/knowledge/.knowledge_index.json` (غير متتبّع في git، ومفيش بناء أوتوماتيكي وقت تشغيل السيرفر لتجنّب تكلفة/تأخير عند كل cold start).
-   - **وقت كل ترجمة جديدة**: `openai_service.translate_text` بينده على `route_collection()` (تصنيف بـ OpenAI + fallback كلمات مفتاحية) ثم `retrieve_context()` (أقرب عيّنات بالـ cosine similarity) ويحقن النتيجة كـ `collection_context` في `get_translation_prompt()` من `translation_prompt.py` — يعني الترجمة دلوقتي مبنية على نفس منطق الـ Custom GPT (system prompt + sample context + النص الأصلي).
+   - **Index بدون embeddings**: `python -m scripts.build_knowledge_index` يقسّم كل ملف لقطع نصية ويصنّفها، ويخزنهم في `backend/knowledge/.knowledge_index.json` (غير متتبّع في git). بدون أي API call — استخراج وتقسيم وتصنيف محلي بالكامل.
+   - **وقت كل ترجمة جديدة**: `claude_service.translate_text` بينده على `route_collection()` (تصنيف بـ Claude + fallback كلمات مفتاحية) ثم `retrieve_context()` (أقرب عيّنات بمطابقة كلمات مفتاحية/keyword overlap) ويحقن النتيجة كـ `collection_context` في `get_translation_prompt()` من `translation_prompt.py` — يعني الترجمة دلوقتي مبنية على نفس منطق الـ Custom GPT (system prompt + sample context + النص الأصلي)، لكن بمحرك Claude بالكامل.
 
 ---
 
 ## الخطوات المطلوبة منك بالتفصيل
 
-### 1. اعمل API Key من OpenAI + Vector Stores
-- روح على https://platform.openai.com/api-keys وخد مفتاح API.
-- اعمل الـ 9 Vector Stores من https://platform.openai.com/storage/vector_stores (واحدة لكل كولكشن قانوني)، وارفع المستندات المرجعية لكل واحدة.
-- خد الـ IDs (شكلها `vs_...`) وحطهم مفصولين بفاصلة في `OPENAI_VECTOR_STORE_IDS`.
+### 1. اعمل API Key من Anthropic
+- روح على https://console.anthropic.com/settings/keys وخد مفتاح API.
+- حط القيمة في `ANTHROPIC_API_KEY`. الـ RAG على الـ 9 كولكشنات القانونية محلي بالكامل (`backend/knowledge/`) ومش محتاج أي vector store خارجي.
 
 ### 2. ضيف خط عربي للفواتير (مهم)
 - نزّل خط TTF عربي (مثلاً [Noto Naskh Arabic](https://fonts.google.com/noto/specimen/Noto+Naskh+Arabic)) وحطه في:
@@ -90,8 +89,7 @@ moajam-almaani-v2/
 - روح على https://dashboard.render.com → New → Blueprint → اربط GitHub repo `moajam-v2`.
 - Render هيقرا `render.yaml` تلقائيًا وهيجهز: قاعدة بيانات Postgres + خدمة الباك إند + Disk دائم.
 - بعد ما يخلص، روح على الخدمة → Environment وحدد القيم المطلوبة يدويًا (مُعلّمة `sync: false` في render.yaml):
-  - `OPENAI_API_KEY`
-  - `OPENAI_VECTOR_STORE_IDS`
+  - `ANTHROPIC_API_KEY`
   - (اختياري) `PAYMOB_API_KEY`, `PAYMOB_INTEGRATION_ID`
 - `SECRET_KEY` و `API_KEY` بيتولّدوا أوتوماتيك (`generateValue: true`) — خد قيمة `API_KEY` بعد التوليد وحطها في WordPress.
 
@@ -133,4 +131,4 @@ WP_BASE_URL=https://moajamalmaani.com
 - النظام بيعالج الترجمة بـ `BackgroundTasks` المدمجة في FastAPI. لو الحجم زاد كتير، الخطوة التالية هي Celery + Redis.
 - `Base.metadata.create_all` في `main.py` بيعمل الجداول أول مرة لو مفيش migrations — الأفضل دايمًا `alembic upgrade head` في الإنتاج.
 - ملف `.env` لازم يفضل خارج git (موجود في `.gitignore` بالفعل).
-- التوكنز (GitHub، OpenAI، إلخ) لازم تتحط كـ environment variables فقط، ومتتكتبش في أي ملف بيترفع على git.
+- التوكنز (GitHub، Anthropic، إلخ) لازم تتحط كـ environment variables فقط، ومتتكتبش في أي ملف بيترفع على git.

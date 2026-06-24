@@ -26,12 +26,10 @@ services:
         fromDatabase:
           name: moajam-db
           property: connectionString
-      - key: OPENAI_API_KEY
+      - key: ANTHROPIC_API_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-5.1
-      - key: OPENAI_VECTOR_STORE_IDS
-        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-4-6
       - key: CORS_ORIGINS
         value: '["https://moajamalmaani.com","https://www.moajamalmaani.com"]'
       - key: WP_BASE_URL
