@@ -93,16 +93,21 @@ moajam-almaani-v2/
   - (اختياري) `PAYMOB_API_KEY`, `PAYMOB_INTEGRATION_ID`
 - `SECRET_KEY` و `API_KEY` بيتولّدوا أوتوماتيك (`generateValue: true`) — خد قيمة `API_KEY` بعد التوليد وحطها في WordPress.
 
-### 4. أول Migration + أول مستخدم أدمن + Chart of Accounts + RAG index
-من Render Shell (أو محليًا بـ docker compose):
+### 4. أول مستخدم أدمن + Chart of Accounts + RAG index
+الـ migration الأولى (`backend/alembic/versions/0ae2a6fc6b11_init.py`) متعمولة ومتتبّعة في git بالفعل،
+وبتتطبّق تلقائيًا (`alembic upgrade head`) عند كل تشغيل للـ container - راجع `CMD` في `backend/Dockerfile`.
+من Render Shell (أو محليًا بـ docker compose) لازم تشغّل يدويًا بس:
 ```bash
-alembic revision --autogenerate -m "init"
-alembic upgrade head
 python -m scripts.create_admin admin "كلمة-سر-قوية"
 python -m scripts.seed_accounts
 python -m scripts.build_knowledge_index
 ```
 آخر أمر (`build_knowledge_index`) لازم تعيد تشغيله لو ضفت/عدّلت أي ملف في `backend/knowledge/`.
+
+لو غيّرت أي SQLAlchemy model مستقبلًا، ولّد migration جديدة محليًا وادفعها مع الكود:
+```bash
+python -m alembic revision --autogenerate -m "وصف التغيير"
+```
 
 ### 5. دومين + SSL
 Render بيوفر دومين `xxx.onrender.com` بشهادة SSL تلقائي. لو عايز `api.moajamalmaani.com`، ضيفه من Render → Settings → Custom Domain، ووجّه CNAME من عندك.
@@ -129,6 +134,6 @@ WP_BASE_URL=https://moajamalmaani.com
 ## ملاحظات مهمة
 
 - النظام بيعالج الترجمة بـ `BackgroundTasks` المدمجة في FastAPI. لو الحجم زاد كتير، الخطوة التالية هي Celery + Redis.
-- `Base.metadata.create_all` في `main.py` بيعمل الجداول أول مرة لو مفيش migrations — الأفضل دايمًا `alembic upgrade head` في الإنتاج.
+- الـ schema بالكامل alembic-managed دلوقتي (`alembic upgrade head` بيشتغل تلقائي عند بداية كل container)، مفيش `Base.metadata.create_all` ولا اعتماد على auto-create.
 - ملف `.env` لازم يفضل خارج git (موجود في `.gitignore` بالفعل).
 - التوكنز (GitHub، Anthropic، إلخ) لازم تتحط كـ environment variables فقط، ومتتكتبش في أي ملف بيترفع على git.
