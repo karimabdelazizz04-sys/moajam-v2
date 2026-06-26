@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # WordPress is the only durable file store. Render itself stays stateless:
     # receive a source file URL -> translate -> push the result back to WP -> done.
     WP_BASE_URL: str = ""
+    # WordPress Application Password (Users -> Profile -> Application Passwords),
+    # used for source-file uploads via the core /wp-json/wp/v2/media route.
+    # Set these in .env only - never commit real values.
+    WP_USER: str = ""
+    WP_APP_PASSWORD: str = ""
     MAX_UPLOAD_SIZE_MB: int = 512
 
     # RAG knowledge base (backend/knowledge/) used to ground translations in

@@ -3,11 +3,12 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, verify_api_key
+from app.core.config import get_settings
 from app.models.client import Client
 from app.models.erp import Notification
 from app.models.translation_job import JobStatus, TranslationJob
@@ -16,7 +17,14 @@ from app.services.docx_service import build_translated_docx
 from app.services.file_extract_service import extract_text
 from app.services.invoicing_service import create_invoice_for_translation_job
 from app.services.claude_service import translate_text
-from app.services.wordpress_service import download_source_file, upload_media_to_wordpress
+from app.services.wordpress_service import (
+    WordPressMediaError,
+    download_source_file,
+    upload_media_to_wordpress,
+    upload_source_to_wordpress,
+)
+
+settings = get_settings()
 
 router = APIRouter(
     prefix="/translations",
@@ -132,6 +140,38 @@ def _resolve_client_id(
         if changed:
             db.commit()
     return client.id
+
+
+@router.post("/upload", status_code=201)
+def upload_source_file(file: UploadFile = File(...)):
+    """Accept a file from the dashboard/portal, relay it to the WordPress Media
+    Library using backend-only credentials, and return its permanent URL. The
+    browser never sees the WordPress Application Password.
+
+    The returned `url` is what you then pass as `source_file_url` to
+    POST /api/v1/translations.
+    """
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in ALLOWED_SUFFIXES:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {suffix or '(none)'}")
+
+    content = file.file.read()
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413, detail=f"File too large (max {settings.MAX_UPLOAD_SIZE_MB} MB)"
+        )
+
+    try:
+        media = upload_source_to_wordpress(
+            content,
+            file.filename,
+            file.content_type or "application/octet-stream",
+        )
+    except WordPressMediaError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    return {"url": media["url"], "filename": file.filename, "id": media["id"]}
 
 
 @router.post("", response_model=TranslationJobCreateResponse, status_code=201)

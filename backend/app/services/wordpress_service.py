@@ -1,3 +1,5 @@
+import base64
+
 import requests
 
 from app.core.config import get_settings
@@ -7,6 +9,41 @@ settings = get_settings()
 
 class WordPressMediaError(Exception):
     pass
+
+
+def upload_source_to_wordpress(file_bytes: bytes, filename: str, content_type: str) -> dict:
+    """Push a caller-provided *source* file straight to the WordPress Media
+    Library via the core `/wp-json/wp/v2/media` route, authenticated with an
+    Application Password (Basic Auth).
+
+    The credentials live only in backend settings - the browser uploads the
+    file to this backend, which then relays it to WordPress, so the WordPress
+    password is never exposed client-side.
+
+    Returns {"id": <attachment id>, "url": <permanent WordPress media URL>}.
+    """
+    if not settings.WP_BASE_URL:
+        raise WordPressMediaError("WP_BASE_URL is not configured")
+    if not settings.WP_USER or not settings.WP_APP_PASSWORD:
+        raise WordPressMediaError("WP_USER / WP_APP_PASSWORD are not configured")
+
+    url = settings.WP_BASE_URL.rstrip("/") + "/wp-json/wp/v2/media"
+    token = base64.b64encode(
+        f"{settings.WP_USER}:{settings.WP_APP_PASSWORD}".encode()
+    ).decode()
+    response = requests.post(
+        url,
+        headers={"Authorization": f"Basic {token}"},
+        files={"file": (filename, file_bytes, content_type)},
+        timeout=120,
+    )
+    if response.status_code >= 400:
+        raise WordPressMediaError(
+            f"WordPress source upload failed ({response.status_code}): {response.text}"
+        )
+
+    data = response.json()
+    return {"id": data.get("id"), "url": data.get("source_url")}
 
 
 def download_source_file(url: str) -> bytes:
