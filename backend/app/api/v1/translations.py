@@ -3,6 +3,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+import requests
+from anthropic import APITimeoutError
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -68,6 +70,7 @@ def _run_translation_job(job_id: str, db: Session) -> None:
             source_language=job.source_language,
             target_language=job.target_language,
             legal_domain=job.legal_domain,
+            timeout=300,
         )
 
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as output_tmp:
@@ -96,6 +99,20 @@ def _run_translation_job(job_id: str, db: Session) -> None:
                 )
             )
             db.commit()
+    except (APITimeoutError, requests.exceptions.Timeout) as exc:
+        # Claude or WordPress network call blew past its per-request timeout
+        # (5 min). Surface a friendly reason instead of a raw stack message.
+        job.status = JobStatus.FAILED
+        job.error_message = f"Timeout: Translation took too long (5 minutes). {exc}"
+        if job.created_by:
+            db.add(
+                Notification(
+                    recipient=job.created_by,
+                    type="job_failed",
+                    message=f"Translation timed out: {job.source_filename}",
+                    related_job_id=job.id,
+                )
+            )
     except Exception as exc:  # noqa: BLE001
         job.status = JobStatus.FAILED
         job.error_message = str(exc)

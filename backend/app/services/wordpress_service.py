@@ -56,7 +56,9 @@ def download_source_file(url: str) -> bytes:
     return response.content
 
 
-def upload_media_to_wordpress(file_bytes: bytes, filename: str, content_type: str) -> dict:
+def upload_media_to_wordpress(
+    file_bytes: bytes, filename: str, content_type: str, timeout: int = 300
+) -> dict:
     """Push a generated file (translated DOCX, invoice PDF) to the WordPress
     Media Library via the plugin's `/wp-json/moajam/v1/media` route, which is
     protected by the same shared X-API-Key used everywhere else.
@@ -71,7 +73,7 @@ def upload_media_to_wordpress(file_bytes: bytes, filename: str, content_type: st
         url,
         headers={"X-API-Key": settings.API_KEY},
         files={"file": (filename, file_bytes, content_type)},
-        timeout=60,
+        timeout=timeout,
     )
     if response.status_code >= 400:
         raise WordPressMediaError(f"WordPress media upload failed ({response.status_code}): {response.text}")

@@ -16,6 +16,7 @@ def translate_text(
     source_language: str = "auto-detect",
     target_language: str = "Arabic",
     legal_domain: str | None = None,
+    timeout: int = 300,
 ) -> str:
     """Send extracted document text to Claude and return the translated text.
 
@@ -41,12 +42,13 @@ def translate_text(
         max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
         system=system,
         messages=[{"role": "user", "content": text}],
+        timeout=timeout,
     )
 
     return "".join(block.text for block in response.content if block.type == "text")
 
 
-def ocr_image(image_bytes: bytes, media_type: str = "image/png") -> str:
+def ocr_image(image_bytes: bytes, media_type: str = "image/png", timeout: int = 300) -> str:
     """Extract text verbatim from a single page image using Claude Vision.
 
     Used as a fallback for scanned/image-only PDFs whose embedded text layer is
@@ -79,5 +81,6 @@ def ocr_image(image_bytes: bytes, media_type: str = "image/png") -> str:
                 ],
             }
         ],
+        timeout=timeout,
     )
     return "".join(block.text for block in response.content if block.type == "text")
