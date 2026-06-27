@@ -28,6 +28,15 @@ def upload_source_to_wordpress(file_bytes: bytes, filename: str, content_type: s
         raise WordPressMediaError("WP_USER / WP_APP_PASSWORD are not configured")
 
     url = settings.WP_BASE_URL.rstrip("/") + "/wp-json/wp/v2/media"
+    # Diagnostics only - never log the secret itself, only its length so we can
+    # tell "empty / quoted / truncated App Password" apart from a real value.
+    print(f"[WP source upload] Upload to: {url}", flush=True)
+    print(f"[WP source upload] Auth user: {settings.WP_USER}", flush=True)
+    print(
+        "[WP source upload] Password length: "
+        f"{len(settings.WP_APP_PASSWORD) if settings.WP_APP_PASSWORD else 'None'}",
+        flush=True,
+    )
     token = base64.b64encode(
         f"{settings.WP_USER}:{settings.WP_APP_PASSWORD}".encode()
     ).decode()
@@ -37,6 +46,7 @@ def upload_source_to_wordpress(file_bytes: bytes, filename: str, content_type: s
         files={"file": (filename, file_bytes, content_type)},
         timeout=120,
     )
+    print(f"[WP source upload] Response: {response.status_code}", flush=True)
     if response.status_code >= 400:
         raise WordPressMediaError(
             f"WordPress source upload failed ({response.status_code}): {response.text}"
@@ -69,12 +79,17 @@ def upload_media_to_wordpress(
         raise WordPressMediaError("WP_BASE_URL is not configured")
 
     url = settings.WP_BASE_URL.rstrip("/") + "/wp-json/moajam/v1/media"
+    # NOTE: this output-file path uses the plugin route + X-API-Key, NOT the
+    # core route + Basic Auth / WP_APP_PASSWORD that the source upload uses.
+    print(f"[WP media upload] Upload to: {url}", flush=True)
+    print(f"[WP media upload] X-API-Key set: {bool(settings.API_KEY)}", flush=True)
     response = requests.post(
         url,
         headers={"X-API-Key": settings.API_KEY},
         files={"file": (filename, file_bytes, content_type)},
         timeout=timeout,
     )
+    print(f"[WP media upload] Response: {response.status_code}", flush=True)
     if response.status_code >= 400:
         raise WordPressMediaError(f"WordPress media upload failed ({response.status_code}): {response.text}")
 
