@@ -3,12 +3,32 @@ import base64
 from anthropic import Anthropic
 
 from app.core.config import get_settings
-from app.services.knowledge_service import retrieve_context, route_collection
-from app.services.translation_prompt import get_translation_prompt
+from app.services.knowledge_service import COLLECTIONS, retrieve_context, route_collection
+from app.services.translation_prompt import SYSTEM_PROMPT
 
 settings = get_settings()
 
 _client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+# The raw per-collection knowledge PDFs are 7-100MB each, so we never inline a
+# whole file. We pull the most relevant pre-indexed chunks for the matched
+# collection and hard-cap their combined size to stay well inside the context
+# window. See knowledge_service.build_index / retrieve_context.
+_KNOWLEDGE_TOP_K = 6
+_MAX_KNOWLEDGE_CHARS = 60000
+
+
+def _resolve_collection(legal_domain: str | None, source_text: str) -> str:
+    """Pick the knowledge collection. An explicit, valid `legal_domain` (a
+    collection code like ``F_Tenancy_Real_Estate``) wins; otherwise classify
+    the document from its own text.
+    """
+    if legal_domain:
+        ld = legal_domain.strip()
+        for code in COLLECTIONS:
+            if ld.lower() == code.lower() or ld.upper().startswith(code.upper()):
+                return code
+    return route_collection(source_text)
 
 
 def translate_text(
@@ -20,28 +40,31 @@ def translate_text(
 ) -> str:
     """Send extracted document text to Claude and return the translated text.
 
-    Runs a RAG pass first: classify the document into one of the 9 knowledge
-    collections, retrieve the closest-matching sample(s) from
-    backend/knowledge/, and feed that as grounding context alongside the
-    master system prompt.
+    Grounds the translation in the matched knowledge collection: resolve the
+    collection (preferring an explicit legal_domain), pull the most relevant
+    pre-indexed chunks from backend/knowledge/ as the knowledge context, and
+    feed them alongside the full master SYSTEM_PROMPT.
     """
-    collection = route_collection(text)
-    sample_context = retrieve_context(text, collection)
+    collection = _resolve_collection(legal_domain, text)
+    knowledge_context = retrieve_context(text, collection, top_k=_KNOWLEDGE_TOP_K)
+    if len(knowledge_context) > _MAX_KNOWLEDGE_CHARS:
+        knowledge_context = knowledge_context[:_MAX_KNOWLEDGE_CHARS]
 
-    task_context = f"Source language: {source_language}\nTarget language: {target_language}"
-    if legal_domain:
-        task_context += f"\nDeclared document/legal domain hint: {legal_domain}"
-    task_context += f"\nMatched knowledge collection: {collection}"
-    if sample_context:
-        task_context += f"\n\nRetrieved reference samples:\n{sample_context}"
-
-    system = get_translation_prompt(task_context)
+    user_content = (
+        f"KNOWLEDGE COLLECTION ({collection}):\n"
+        f"{knowledge_context}\n\n"
+        f"SOURCE DOCUMENT TO TRANSLATE "
+        f"(source language: {source_language}, target language: {target_language}):\n"
+        f"{text}\n\n"
+        f"Translate the above document to {target_language} following all rules in your "
+        f"system prompt.\nUse the knowledge collection above as your primary reference."
+    )
 
     response = _client.messages.create(
         model=settings.ANTHROPIC_MODEL,
         max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
-        system=system,
-        messages=[{"role": "user", "content": text}],
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_content}],
         timeout=timeout,
     )
 
