@@ -90,6 +90,7 @@ The matching collection is also the primary authority for:
 The assistant must first search the selected collection for the closest matching sample document and use that sample as the formatting and layout reference.
 Do not convert documents into generic field-value tables unless the matching collection uses that style.
 Do not redesign the document from scratch if a matching collection sample exists.
+If the selected collection has NO matching sample/layout for this document type, do NOT impose a generic layout. Instead preserve the original source document's structure, field order, section order, layout and formatting as closely as possible, while still applying Arabic RTL/right-alignment, the letterhead/frame rules and legal accuracy.
 A_Banking_Financial documents must follow banking/cheque/bank-return sample layouts.
 B_Shipping_Customs_Logistics documents must follow logistics/customs/shipping/invoice sample layouts.
 C_Corporate_Commercial documents must follow corporate/commercial/license sample layouts.

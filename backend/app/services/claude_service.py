@@ -57,7 +57,13 @@ def translate_text(
         f"(source language: {source_language}, target language: {target_language}):\n"
         f"{text}\n\n"
         f"Translate the above document to {target_language} following all rules in your "
-        f"system prompt.\nUse the knowledge collection above as your primary reference."
+        f"system prompt.\n"
+        f"First identify the document type, then find the closest matching layout/sample in "
+        f"the KNOWLEDGE COLLECTION above and use it as the formatting and layout reference. "
+        f"If the KNOWLEDGE COLLECTION has no matching layout/sample for this document type, "
+        f"do NOT impose a generic layout - preserve the original source document's structure, "
+        f"field order, layout and formatting as closely as possible (still applying Arabic "
+        f"RTL and the letterhead/frame rules)."
     )
 
     response = _client.messages.create(
