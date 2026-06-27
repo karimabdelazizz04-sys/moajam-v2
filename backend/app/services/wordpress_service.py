@@ -70,22 +70,25 @@ def upload_media_to_wordpress(
     file_bytes: bytes, filename: str, content_type: str, timeout: int = 300
 ) -> dict:
     """Push a generated file (translated DOCX, invoice PDF) to the WordPress
-    Media Library via the plugin's `/wp-json/moajam/v1/media` route, which is
-    protected by the same shared X-API-Key used everywhere else.
+    Media Library via the core `/wp-json/wp/v2/media` route with Basic Auth -
+    the same proven path source uploads use (the plugin route isn't available).
 
     Returns {"id": <attachment id>, "url": <permanent WordPress media URL>}.
     """
     if not settings.WP_BASE_URL:
         raise WordPressMediaError("WP_BASE_URL is not configured")
+    if not settings.WP_USER or not settings.WP_APP_PASSWORD:
+        raise WordPressMediaError("WP_USER / WP_APP_PASSWORD are not configured")
 
-    url = settings.WP_BASE_URL.rstrip("/") + "/wp-json/moajam/v1/media"
-    # NOTE: this output-file path uses the plugin route + X-API-Key, NOT the
-    # core route + Basic Auth / WP_APP_PASSWORD that the source upload uses.
+    url = settings.WP_BASE_URL.rstrip("/") + "/wp-json/wp/v2/media"
     print(f"[WP media upload] Upload to: {url}", flush=True)
-    print(f"[WP media upload] X-API-Key set: {bool(settings.API_KEY)}", flush=True)
+    print(f"[WP media upload] Auth user: {settings.WP_USER}", flush=True)
+    token = base64.b64encode(
+        f"{settings.WP_USER}:{settings.WP_APP_PASSWORD}".encode()
+    ).decode()
     response = requests.post(
         url,
-        headers={"X-API-Key": settings.API_KEY},
+        headers={"Authorization": f"Basic {token}"},
         files={"file": (filename, file_bytes, content_type)},
         timeout=timeout,
     )
@@ -93,4 +96,5 @@ def upload_media_to_wordpress(
     if response.status_code >= 400:
         raise WordPressMediaError(f"WordPress media upload failed ({response.status_code}): {response.text}")
 
-    return response.json()
+    data = response.json()
+    return {"id": data.get("id"), "url": data.get("source_url")}
