@@ -174,3 +174,38 @@ def retrieve_context(source_text: str, collection: str | None = None, top_k: int
     scored = sorted(candidates, key=lambda e: _keyword_score(query_tokens, e["text"]), reverse=True)
     top = scored[:top_k] + global_entries
     return "\n\n---\n\n".join(f"[Sample from {e['file']} - {e['collection']}]\n{e['text']}" for e in top)
+
+
+def _format_entries(entries: list[dict]) -> str:
+    return "\n\n---\n\n".join(
+        f"[{e['file']} - {e['collection']}]\n{e['text']}" for e in entries
+    )
+
+
+def retrieve_split(
+    source_text: str, collection: str | None = None, top_k: int = 6
+) -> tuple[str, str]:
+    """Like retrieve_context, but return (collection_samples, global_rules) as
+    two separate strings so the caller can present them under distinct headings.
+
+    - collection_samples: the top-k closest chunks from the matched collection
+      (layout/terminology reference for this document type).
+    - global_rules: every GLOBAL chunk (master rules, letterhead, strict
+      layout-override) - the controlling requirements that apply to all docs.
+    """
+    entries = _load_index()
+    if not entries:
+        return "", ""
+
+    global_entries = [e for e in entries if e["collection"] == GLOBAL_COLLECTION]
+    candidates = [e for e in entries if not collection or e["collection"] == collection]
+    if not candidates:
+        candidates = [e for e in entries if e["collection"] != GLOBAL_COLLECTION]
+
+    query_tokens = set(_tokenize(source_text[:3000]))
+    if query_tokens:
+        candidates = sorted(
+            candidates, key=lambda e: _keyword_score(query_tokens, e["text"]), reverse=True
+        )
+
+    return _format_entries(candidates[:top_k]), _format_entries(global_entries)

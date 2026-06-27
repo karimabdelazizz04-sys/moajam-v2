@@ -3,7 +3,7 @@ import base64
 from anthropic import Anthropic
 
 from app.core.config import get_settings
-from app.services.knowledge_service import COLLECTIONS, retrieve_context, route_collection
+from app.services.knowledge_service import COLLECTIONS, retrieve_split, route_collection
 from app.services.translation_prompt import SYSTEM_PROMPT
 
 settings = get_settings()
@@ -46,24 +46,22 @@ def translate_text(
     feed them alongside the full master SYSTEM_PROMPT.
     """
     collection = _resolve_collection(legal_domain, text)
-    knowledge_context = retrieve_context(text, collection, top_k=_KNOWLEDGE_TOP_K)
-    if len(knowledge_context) > _MAX_KNOWLEDGE_CHARS:
-        knowledge_context = knowledge_context[:_MAX_KNOWLEDGE_CHARS]
+    layout_chunks, global_chunks = retrieve_split(text, collection, top_k=_KNOWLEDGE_TOP_K)
+    layout_chunks = layout_chunks[:_MAX_KNOWLEDGE_CHARS]
+    global_chunks = global_chunks[:_MAX_KNOWLEDGE_CHARS]
 
     user_content = (
-        f"KNOWLEDGE COLLECTION ({collection}):\n"
-        f"{knowledge_context}\n\n"
-        f"SOURCE DOCUMENT TO TRANSLATE "
-        f"(source language: {source_language}, target language: {target_language}):\n"
+        f"## المراجع من قاعدة المعرفة:\n\n"
+        f"### نماذج وأمثلة ترجمات ({collection}):\n"
+        f"{layout_chunks}\n\n"
+        f"### الاشتراطات القانونية والمصطلحات:\n"
+        f"{global_chunks}\n\n"
+        f"---\n\n"
+        f"## المستند المطلوب ترجمته:\n\n"
         f"{text}\n\n"
-        f"Translate the above document to {target_language} following all rules in your "
-        f"system prompt.\n"
-        f"First identify the document type, then find the closest matching layout/sample in "
-        f"the KNOWLEDGE COLLECTION above and use it as the formatting and layout reference. "
-        f"If the KNOWLEDGE COLLECTION has no matching layout/sample for this document type, "
-        f"do NOT impose a generic layout - preserve the original source document's structure, "
-        f"field order, layout and formatting as closely as possible (still applying Arabic "
-        f"RTL and the letterhead/frame rules)."
+        f"---\n\n"
+        f"ابدأ بالترجمة الاحترافية الكاملة الآن إلى {target_language}.\n"
+        f"لا تكتب مقدمة أو تعليق — فقط الترجمة النهائية الجاهزة."
     )
 
     response = _client.messages.create(
