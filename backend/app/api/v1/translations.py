@@ -253,6 +253,25 @@ def get_translation_job(job_id: str, db: Session = Depends(get_db)):
     return job
 
 
+@router.post("/{job_id}/retry")
+def retry_translation_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Re-queue a job that got stuck (e.g. left in PROCESSING after a crash or a
+    redeploy mid-flight) or that previously FAILED. Resets it to PENDING and
+    runs the pipeline again."""
+    job = db.get(TranslationJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job.status = JobStatus.PENDING
+    job.error_message = None
+    db.commit()
+    background_tasks.add_task(_run_translation_job, job.id, db)
+    return {"job_id": job.id, "status": job.status}
+
+
 @router.get("/{job_id}/download")
 def download_translation(job_id: str, db: Session = Depends(get_db)):
     """The translated file lives on WordPress, not on Render - this just

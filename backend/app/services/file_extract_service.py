@@ -1,3 +1,4 @@
+import gc
 from io import BytesIO
 from pathlib import Path
 
@@ -7,6 +8,11 @@ from pypdf import PdfReader
 # Below this many characters, a PDF is treated as scanned/image-only and routed
 # through Claude Vision OCR instead of trusting the (empty) embedded text layer.
 _MIN_PDF_TEXT_CHARS = 20
+
+# OCR runs on a 512MB free tier, so keep memory tight: render at a modest DPI,
+# one page at a time, and cap how many pages we'll process per document.
+_OCR_DPI = 120
+_OCR_MAX_PAGES = 10
 
 
 class UnsupportedFileType(Exception):
@@ -57,20 +63,38 @@ def _extract_pdf(path: str) -> str:
 def _ocr_pdf(path: str) -> str:
     """Render each PDF page to a PNG and OCR it with Claude Vision.
 
+    Memory-conscious for the 512MB free tier: render one page at a time at a
+    modest DPI, free each rendered image before moving on, and stop after
+    _OCR_MAX_PAGES pages.
+
     Lazy imports keep pdf2image/poppler off the hot path for normal text PDFs
     and avoid an import-time hard dependency. pdf2image needs the system
     `poppler-utils` package (installed in the Dockerfile).
     """
-    from pdf2image import convert_from_path
+    from pdf2image import convert_from_path, pdfinfo_from_path
 
     from app.services.claude_service import ocr_image
 
-    images = convert_from_path(path, dpi=200)
+    try:
+        total_pages = pdfinfo_from_path(path)["Pages"]
+    except Exception:  # noqa: BLE001 - fall back to the cap if page count is unknown
+        total_pages = _OCR_MAX_PAGES
+    page_count = min(total_pages, _OCR_MAX_PAGES)
+
     parts: list[str] = []
-    for image in images:
-        buffer = BytesIO()
-        image.save(buffer, format="PNG")
-        page_text = ocr_image(buffer.getvalue(), "image/png")
+    for page_num in range(1, page_count + 1):
+        # Render just this one page so only a single image is ever in memory.
+        images = convert_from_path(
+            path, dpi=_OCR_DPI, first_page=page_num, last_page=page_num
+        )
+        if not images:
+            continue
+        img = images[0]
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        page_text = ocr_image(buf.getvalue(), "image/png")
         if page_text.strip():
             parts.append(page_text)
+        del img, buf, images
+        gc.collect()
     return "\n".join(parts)
