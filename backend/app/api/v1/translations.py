@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, verify_api_key
 from app.core.config import get_settings
+from app.db.session import SessionLocal
 from app.models.client import Client
 from app.models.erp import Notification
 from app.models.translation_job import JobStatus, TranslationJob
@@ -37,14 +38,21 @@ router = APIRouter(
 ALLOWED_SUFFIXES = {".docx", ".pdf", ".txt"}
 
 
-def _run_translation_job(job_id: str, db: Session) -> None:
+def _run_translation_job(job_id: str) -> None:
     """Stateless pipeline: download the source from WordPress, translate it
     fully in memory/temp-files, push the result back to WordPress, and leave
     nothing behind on Render's own disk. Safe to survive a redeploy mid-flight
     only insofar as the job record itself lives in Postgres, not local files.
+
+    Opens its OWN database session (via SessionLocal) instead of reusing the
+    request-scoped one: a background task runs after the request returns, by
+    which point the request's session has already been closed - reusing it left
+    jobs stuck on PROCESSING because the final commit silently failed.
     """
+    db = SessionLocal()
     job = db.get(TranslationJob, job_id)
     if not job:
+        db.close()
         return
 
     suffix = Path(job.source_filename).suffix.lower() or ".txt"
@@ -52,19 +60,26 @@ def _run_translation_job(job_id: str, db: Session) -> None:
     output_tmp_path: str | None = None
 
     try:
+        print(f"[job {job_id}] start", flush=True)
         job.status = JobStatus.PROCESSING
         db.commit()
 
         source_bytes = download_source_file(job.source_file_url)
+        print(f"[job {job_id}] downloaded {len(source_bytes)} bytes", flush=True)
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as source_tmp:
             source_tmp.write(source_bytes)
             source_tmp_path = source_tmp.name
 
         source_text = extract_text(source_tmp_path)
+        print(
+            f"[job {job_id}] extracted text length={len(source_text) if source_text else 0}",
+            flush=True,
+        )
         if not source_text or not source_text.strip():
             raise ValueError(
                 "تعذّر استخراج نص من الملف. قد يكون مصوّراً (scanned) أو محمياً."
             )
+        print(f"[job {job_id}] translating...", flush=True)
         translated_text = translate_text(
             source_text,
             source_language=job.source_language,
@@ -72,6 +87,7 @@ def _run_translation_job(job_id: str, db: Session) -> None:
             legal_domain=job.legal_domain,
             timeout=300,
         )
+        print(f"[job {job_id}] translated length={len(translated_text)}", flush=True)
 
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as output_tmp:
             output_tmp_path = output_tmp.name
@@ -88,6 +104,7 @@ def _run_translation_job(job_id: str, db: Session) -> None:
         job.output_url = media["url"]
         job.status = JobStatus.DONE
         db.commit()
+        print(f"[job {job_id}] done", flush=True)
         create_invoice_for_translation_job(db, job)
         if job.created_by:
             db.add(
@@ -128,6 +145,7 @@ def _run_translation_job(job_id: str, db: Session) -> None:
     finally:
         job.completed_at = datetime.utcnow()
         db.commit()
+        db.close()
         for tmp_path in (source_tmp_path, output_tmp_path):
             if tmp_path:
                 Path(tmp_path).unlink(missing_ok=True)
@@ -237,7 +255,7 @@ def create_translation_job(
     db.add(job)
     db.commit()
 
-    background_tasks.add_task(_run_translation_job, job.id, db)
+    background_tasks.add_task(_run_translation_job, job.id)
 
     return TranslationJobCreateResponse(job_id=job.id, status=job.status)
 
@@ -285,7 +303,7 @@ def retry_translation_job(
     job.status = JobStatus.PENDING
     job.error_message = None
     db.commit()
-    background_tasks.add_task(_run_translation_job, job.id, db)
+    background_tasks.add_task(_run_translation_job, job.id)
     return {"job_id": job.id, "status": job.status}
 
 

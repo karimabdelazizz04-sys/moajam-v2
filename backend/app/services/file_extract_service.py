@@ -81,8 +81,10 @@ def _ocr_pdf(path: str) -> str:
         total_pages = _OCR_MAX_PAGES
     page_count = min(total_pages, _OCR_MAX_PAGES)
 
+    print(f"[OCR] scanned PDF: {page_count} page(s) to OCR (dpi={_OCR_DPI})", flush=True)
     parts: list[str] = []
     for page_num in range(1, page_count + 1):
+        print(f"[OCR] page {page_num}/{page_count}", flush=True)
         # Render just this one page so only a single image is ever in memory.
         images = convert_from_path(
             path, dpi=_OCR_DPI, first_page=page_num, last_page=page_num
