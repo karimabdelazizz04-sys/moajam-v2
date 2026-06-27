@@ -1,3 +1,5 @@
+import base64
+
 from anthropic import Anthropic
 
 from app.core.config import get_settings
@@ -41,4 +43,41 @@ def translate_text(
         messages=[{"role": "user", "content": text}],
     )
 
+    return "".join(block.text for block in response.content if block.type == "text")
+
+
+def ocr_image(image_bytes: bytes, media_type: str = "image/png") -> str:
+    """Extract text verbatim from a single page image using Claude Vision.
+
+    Used as a fallback for scanned/image-only PDFs whose embedded text layer is
+    empty. Returns the raw text only - no commentary, no translation.
+    """
+    encoded = base64.standard_b64encode(image_bytes).decode("utf-8")
+    response = _client.messages.create(
+        model=settings.ANTHROPIC_MODEL,
+        max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": encoded,
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            "استخرج كل النص الموجود في هذه الصورة حرفياً كما هو، "
+                            "دون أي تعليق أو ترجمة أو تنسيق إضافي. "
+                            "إن لم يوجد نص، فلا تُرجع شيئاً."
+                        ),
+                    },
+                ],
+            }
+        ],
+    )
     return "".join(block.text for block in response.content if block.type == "text")

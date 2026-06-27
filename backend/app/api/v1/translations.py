@@ -59,6 +59,10 @@ def _run_translation_job(job_id: str, db: Session) -> None:
             source_tmp_path = source_tmp.name
 
         source_text = extract_text(source_tmp_path)
+        if not source_text or not source_text.strip():
+            raise ValueError(
+                "تعذّر استخراج نص من الملف. قد يكون مصوّراً (scanned) أو محمياً."
+            )
         translated_text = translate_text(
             source_text,
             source_language=job.source_language,
