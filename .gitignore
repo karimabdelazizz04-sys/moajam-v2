@@ -3,7 +3,6 @@ __pycache__/
 .env
 backend/.env
 backend/moajam.db
-backend/knowledge/.knowledge_index.json
 .venv/
 .venv*/
 venv/
