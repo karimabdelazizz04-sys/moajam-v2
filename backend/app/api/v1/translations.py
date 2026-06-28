@@ -24,7 +24,11 @@ from app.services.docx_service import (
 )
 from app.services.file_extract_service import extract_text, render_pdf_to_images
 from app.services.invoicing_service import create_invoice_for_translation_job
-from app.services.claude_service import translate_document_images, translate_text
+from app.services.claude_service import (
+    analyze_document_visually,
+    translate_document_images,
+    translate_text,
+)
 from app.services.wordpress_service import (
     WordPressMediaError,
     download_source_file,
@@ -92,6 +96,16 @@ def _run_translation_job(job_id: str) -> None:
                     f"ملاحظة: المستند يحتوي {total_pages} صفحة؛ "
                     f"تُرجمت أول {len(images)} صفحات فقط.\n\n"
                 )
+            # Step 1: independent visual analysis (document type, collection,
+            # layout features, detected fields) - best-effort context for step 2.
+            visual_analysis = analyze_document_visually(images, timeout=300)
+            if visual_analysis:
+                print(
+                    f"[job {job_id}] visual analysis: "
+                    f"{visual_analysis.get('document_type')} -> {visual_analysis.get('collection')}",
+                    flush=True,
+                )
+            # Step 2: visual translation, primed with the analysis.
             print(
                 f"[job {job_id}] vision translate {len(images)}/{total_pages} page(s)",
                 flush=True,
@@ -102,6 +116,7 @@ def _run_translation_job(job_id: str) -> None:
                 legal_domain=job.legal_domain,
                 target_language=job.target_language,
                 truncated_note=note,
+                visual_analysis=visual_analysis,
                 timeout=300,
             )
         else:

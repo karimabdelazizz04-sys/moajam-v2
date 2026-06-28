@@ -141,10 +141,13 @@ def build_docx_from_layout_plan(layout_plan: dict) -> bytes:
             if rows:
                 table = doc.add_table(rows=len(rows), cols=2)
                 table.style = "Table Grid"
+                table.autofit = False
                 for i, row_data in enumerate(rows):
                     # RTL: value on the right (col 0), field label on the left (col 1).
                     value_cell = table.rows[i].cells[0]
                     field_cell = table.rows[i].cells[1]
+                    value_cell.width = Inches(3.5)
+                    field_cell.width = Inches(2.0)
                     for cell, value, bold in (
                         (value_cell, row_data.get("value", ""), False),
                         (field_cell, row_data.get("field", ""), True),
