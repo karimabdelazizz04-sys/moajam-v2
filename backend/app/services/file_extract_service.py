@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import docx
+import fitz  # PyMuPDF
 from pypdf import PdfReader
 
 # Below this many characters, a PDF is treated as scanned/image-only and routed
@@ -61,9 +62,24 @@ def _extract_docx(path: str) -> str:
     return "\n".join(parts)
 
 
+def _extract_pdf_text_layer(path: str) -> str:
+    """Pull the embedded text layer out of a PDF.
+
+    Uses PyMuPDF (fitz) as the primary extractor: it produces far cleaner Arabic
+    than pypdf (correct word order/spacing, no dropped glyphs), which matters for
+    both the knowledge index and cheap routing text. Falls back to pypdf if fitz
+    fails to open the file for any reason.
+    """
+    try:
+        with fitz.open(path) as doc:
+            return "\n".join(page.get_text() for page in doc)
+    except Exception:  # noqa: BLE001 - fall back to pypdf on any fitz failure
+        reader = PdfReader(path)
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
+
+
 def _extract_pdf(path: str, ocr_fallback: bool = True) -> str:
-    reader = PdfReader(path)
-    text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    text = _extract_pdf_text_layer(path)
     if len(text.strip()) >= _MIN_PDF_TEXT_CHARS or not ocr_fallback:
         return text
     # Empty/near-empty text layer -> the PDF is almost certainly scanned. Fall
