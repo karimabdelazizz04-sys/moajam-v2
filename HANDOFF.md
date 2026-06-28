@@ -73,9 +73,14 @@
 - `claude_service.translate_text()`: يختار collection (`_resolve_collection`) → يجيب `knowledge_context` عبر `retrieve_context()` (أعلى 6 chunks بتطابق الكلمات + كل قطع GLOBAL، سقف 60K حرف) → `system=SYSTEM_PROMPT` كامل → رسالة user منظّمة (KNOWLEDGE + SOURCE + تعليمات).
 - الـ knowledge مخزّن مسبقًا في `backend/knowledge/.knowledge_index.json` (**2415 chunk**، keys: `file/collection/text`). مفيش إعادة قراءة للـ PDFات الضخمة (7-100MB) وقت الترجمة.
 - إعادة بناء الـ index بعد أي تغيير في `backend/knowledge/`: عبر `knowledge_service.build_index()`.
+- ⚠️ **الـ index متعمل له commit في git** (مش مُولّد وقت الـ deploy). استخراج الـ PDF بقى بـ **PyMuPDF (`fitz`)** في `file_extract_service._extract_pdf` (fallback لـ pypdf). أي تعديل في `backend/knowledge/` أو في كود الاستخراج **لازم** يتبعه إعادة بناء + commit وإلا الـ production يفضل على index قديم بصمت:
+  ```
+  cd backend && python -m scripts.build_knowledge_index
+  git add backend/knowledge/.knowledge_index.json && git commit -m "Rebuild knowledge index" && git push
+  ```
 
 ### ⚠️ مشاكل جودة الـ knowledge (مكتشفة، لسه محتاجة حل)
-1. **استخراج النص من الـ PDF متلخبط (garbled)** للعربي (`pypdf`) — النص المُغذّى لـ Claude مشوّه.
+1. ~~**استخراج النص من الـ PDF متلخبط (garbled)** للعربي (`pypdf`)~~ ✅ **اتحلّت**: التحويل لـ PyMuPDF (`fitz`) والـ index اتعاد بناؤه (عربي نضيف، ترتيب كلمات صح).
 2. **محتوى F_Tenancy ضعيف**: غالبيته إيميلات/وكالة، مش نماذج عقود نضيفة (19 chunk فقط).
 3. **توزيع غير متوازن**: H_Medical=1464، C=318، B=266 ... بينما E_Government=6، D_POA=11، F_Tenancy=19.
 
