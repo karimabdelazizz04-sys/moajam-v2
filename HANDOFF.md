@@ -1,6 +1,6 @@
 # HANDOFF — Moajam V2 Legal Translation Platform
 
-> ملخّص العمل ليوم 2026-06-25 / 2026-06-26
+> آخر تحديث: 2026-06-28
 > الغرض: تسليم الحالة الكاملة للمشروع عشان أي حد (أو جلسة جديدة) يكمل من نفس النقطة.
 
 ---
@@ -9,141 +9,102 @@
 
 - **الاسم:** Moajam Almaani / معجم المعاني — منصّة ترجمة قانونية (Legal Translation Platform) V2.
 - **الموقع العام:** https://moajamalmaani.com (WordPress).
-- **الـ Backend API (Production):** https://moajam-api.onrender.com (FastAPI على Render).
-- **الترجمة:** تتم بالـ backend عبر Anthropic Claude (`claude-sonnet-4-6`). مفتاح Anthropic موجود على الخادم فقط (`backend/.env`) — لا يظهر إطلاقًا في المتصفح.
-- **تخزين الملفات:** WordPress Media Library هو المخزن الوحيد الدائم. خادم Render **stateless** — لا يخزّن ملفات على قرصه؛ يستقبل URL، يترجم، ويرفع الناتج لـ WordPress.
+- **الـ Backend API (Production):** https://moajam-api.onrender.com (FastAPI على Render — Docker).
+- **الـ Git repo:** https://github.com/karimabdelazizz04-sys/moajam-v2.git (branch `main`، Render بيعمل auto-deploy منه).
+- **الترجمة:** تتم بالـ backend عبر Anthropic Claude (`claude-sonnet-4-6`). مفتاح Anthropic على الخادم فقط (`backend/.env`) — لا يظهر في المتصفح.
+- **تخزين الملفات:** WordPress Media Library هو المخزن الوحيد الدائم. خادم Render **stateless**.
+- **الموارد:** Render حاليًا على خطة بـ **2GB RAM** (مش 512MB زي الأول).
 
-### معماريّة الـ backend (مهم)
-ليس ملف `app.py` واحد. هو تطبيق FastAPI **منظّم**:
-- `app/main.py` — نقطة الدخول.
-- `app/api/v1/*.py` — الـ routers.
-- `app/core/config.py` — إعدادات pydantic Settings.
-- `app/services/*.py` — منطق الخدمات (WordPress, Claude, docx, ...).
+### معماريّة الـ backend
+تطبيق FastAPI منظّم: `app/main.py` (دخول + CORS) · `app/api/v1/*.py` (routers) · `app/core/config.py` (pydantic Settings) · `app/services/*.py` (WordPress, Claude, docx, knowledge, file_extract...).
 
-### مخططات المصادقة (Authentication)
-- **`X-API-Key` header** → لمسارات `translations` و `portal`.
-- **OAuth2 / Bearer token** → لمسارات `clients` و `invoices` و `accounting`.
-- مسار الحسابات الصحيح: `/api/v1/accounting/accounts` (وليس `/api/v1/accounts`).
+### المصادقة
+- **`X-API-Key` header** → مسارات `translations` و `portal`.
+- **OAuth2 / Bearer token** → مسارات `clients` و `invoices` و `accounting`.
+- مسار الحسابات: `/api/v1/accounting/accounts`.
 
 ---
 
-## 2) اللي اتعمل النهاردة
+## 2) الحالة الحالية ✅ — الـ pipeline كامل بيشتغل
 
-### أ) الـ Backend — endpoint رفع ملفات جديد
-الهدف: المتصفح يرفع الملف للـ backend، والـ backend يرفعه لـ WordPress بكلمة مرور تبقى **على الخادم فقط** (أأمن من الرفع المباشر من المتصفح).
-
-تدفّق الرفع الآمن: **المتصفح → الـ Backend → WordPress**.
-
-التعديلات:
-- **`app/api/v1/translations.py`**
-  - أضيف endpoint جديد: `POST /api/v1/translations/upload` (status 201).
-  - يستقبل `UploadFile`، يتحقق من الامتداد (`.docx`, `.pdf`, `.txt`) والحجم (`MAX_UPLOAD_SIZE_MB`)، يرفعه لـ WordPress، ويُرجع `{"url", "filename", "id"}`.
-  - محمي تلقائيًا بـ `X-API-Key` (الـ router عليه `dependencies=[Depends(verify_api_key)]`).
-- **`app/services/wordpress_service.py`**
-  - أضيفت دالة `upload_source_to_wordpress(file_bytes, filename, content_type)` ترفع عبر مسار WordPress الأساسي `/wp-json/wp/v2/media` بـ Basic Auth (Application Password).
-  - تُرجع `{"id", "url"}` (الـ url = `source_url` من رد WordPress).
-- **`app/core/config.py`**
-  - أضيف `WP_USER` و `WP_APP_PASSWORD`.
-- **`.env.example`**
-  - أضيف `WP_USER=CHANGE_ME` و `WP_APP_PASSWORD=CHANGE_ME` (placeholders فقط — لا أسرار حقيقية).
-
-### ب) الـ Frontend — ربط الرفع بالـ backend
-- **`admin-dashboard-FINAL.html`**: دالة `uploadFileToWordPress()` بقت ترفع عبر `POST /api/v1/translations/upload` بدل WordPress مباشرة. كلمة مرور WordPress لم تعد تُلمس في المتصفح.
-- **`client-portal-FINAL.html`**: نفس المنطق — يرفع للـ backend الأول، ياخد الـ URL، ويبعته للـ backend عند إنشاء مهمة الترجمة.
-- الملفات vanilla HTML/CSS/JS، RTL عربي، self-contained. بيانات الاعتماد تتخزّن في `localStorage` عبر لوحة الإعدادات ⚙️ — لا تُكتب أبدًا داخل الـ HTML.
-
-### ج) التحقق (verification)
-- كل الـ JS: `node --check` → **JS OK** للملفين.
-- كل الـ Python المعدّل: `py_compile` → **PYTHON COMPILE OK**.
-
-### د) الـ Deploy
-- الـ backend منشور بالفعل على Render: https://moajam-api.onrender.com
-- التعديلات الجديدة (endpoint الرفع) **معمولة في working tree محليًا فقط** — لسه **مش معمولها commit/push** ومن ثَمّ لسه **مش موجودة على Render**.
+تمّت ترجمة كاملة فعلية بنجاح end-to-end (الملف الناتج اترفع على WordPress:
+`translated_Cargo-2023-2024-1-3.docx`). تدفّق الـ job:
+تنزيل المصدر → استخراج نص (مع OCR للمصوّر) → ترجمة Claude → بناء DOCX → رفع لـ WordPress → `DONE`.
 
 ---
 
-## 3) المشكلة الحالية
+## 3) اللي اتعمل في جلسة 2026-06-27/28 (كله committed + pushed على `main`)
 
-رفع الملفات عبر endpoint `/api/v1/translations/upload`:
-- الكود متكتب ومتحقّق منه محليًا (compile OK).
-- **لكنه لسه مش deployed على Render** لأنه محتاج commit + push للـ repo اللي Render بيسحب منه.
+| commit | الوصف |
+|--------|-------|
+| `ff2effe` | OCR fallback (Claude Vision) للـ PDF المصوّر + حارس النص الفاضي |
+| `b6207fa` | endpoint `POST /translations/{id}/retry` لإعادة تشغيل job عالق + تقليل ذاكرة الـ OCR (DPI 120، صفحة-صفحة، gc، حد 10 صفحات) |
+| `732440b` | timeout 5 دقائق على نداءات Claude + رفع WordPress (`APITimeoutError`/`requests.Timeout` → FAILED برسالة ودّية) |
+| `89fd82a` | logs تشخيصية لرفع WordPress (endpoint/user/طول الباسورد/status — بدون كشف أسرار) |
+| `067ebfb` | **إصلاح الـ jobs العالقة على PROCESSING**: `_run_translation_job` بيفتح DB session خاصّة (`SessionLocal`) بدل session الـ request المقفولة + logs مرحلية |
+| `aec397a` | رفع الملف الناتج عبر core route `wp/v2/media` + Basic Auth (بدل plugin route + X-API-Key) |
+| `d347e42` | ربط ملفات الـ knowledge + الـ SYSTEM_PROMPT بالترجمة (`_resolve_collection` أولوية لـ legal_domain، استرجاع من الـ index، رسالة منظّمة، max_tokens 8192) |
+| `0649818` | قاعدة: لو مفيش لاي-اوت مطابق في الـ knowledge → حافظ على شكل المستند الأصلي (في التعليمة + الـ SYSTEM_PROMPT) |
 
----
-
-## 4) الخطوة الجاية بالظبط
-
-**نتأكد إن `/api/v1/translations/upload` موجود وشغّال على Render.**
-
-1. اعمل deploy للتعديلات (commit + push للـ branch اللي Render بيراقبه، أو Manual Deploy من لوحة Render). **لا تعمل push إلا لما تطلب ذلك صراحةً.**
-2. ضيف متغيّرات البيئة على Render (Environment):
-   ```
-   WP_USER = <اسم مستخدم WordPress>
-   WP_APP_PASSWORD = <App Password الجديد بعد التدوير>
-   ```
-3. تأكّد إن الـ endpoint ظاهر في الـ OpenAPI spec:
-   - افتح: https://moajam-api.onrender.com/docs
-   - أو: https://moajam-api.onrender.com/openapi.json — ودوّر على `/api/v1/translations/upload`.
-4. اختبار سريع (يحتاج `X-API-Key` صحيح):
-   ```bash
-   curl -X POST https://moajam-api.onrender.com/api/v1/translations/upload \
-     -H "X-API-Key: <API_KEY>" \
-     -F "file=@test.docx"
-   ```
-   المتوقّع: `201` مع JSON فيه `url` و `filename` و `id`.
-5. ارفع ملفّي الـ HTML على موقع WordPress (cPanel → File Manager → `public_html`) وافتح:
-   - https://moajamalmaani.com/admin-dashboard-FINAL.html
-   - https://moajamalmaani.com/client-portal-FINAL.html
+### ملاحظة مهمة عن مسارَي رفع WordPress
+- `upload_source_to_wordpress` (المصدر) و `upload_media_to_wordpress` (الناتج) **الاتنين دلوقتي** بيستخدموا core route `wp/v2/media` + **Basic Auth** (`WP_USER`/`WP_APP_PASSWORD`). المسار ده مثبت إنه شغّال (رجّع 201). تم التخلّي عن plugin route لأنه كان بيرجّع 404.
 
 ---
 
-## 5) كل الملفات ومساراتها
+## 4) الفرونت (ملفات محلية — مش في الـ git repo)
 
-### Backend — `C:\Users\Acer\moajam-almaani-v2\backend\`
-| الملف | الحالة | الوصف |
-|------|--------|-------|
-| `app/api/v1/translations.py` | معدّل | أضيف endpoint `POST /upload` |
-| `app/services/wordpress_service.py` | معدّل | أضيفت `upload_source_to_wordpress()` |
-| `app/core/config.py` | معدّل | أضيف `WP_USER`, `WP_APP_PASSWORD` |
-| `.env.example` | معدّل | أضيف placeholders للـ WP creds |
-| `.env` | **لا يُلمس** | فيه أسرار حقيقية، gitignored — لا تقرأه/تكتبه/ترفعه |
-| `app/main.py` | كما هو | نقطة دخول FastAPI |
+**المكان:** `C:\Users\Acer\frontend\` — أهم نسختين: `admin-dashboard.html` و `client-portal.html`.
+**اترفعوا يدويًا على الموقع عبر cPanel** (مفيش FTP/SSH).
 
-### Frontend — `C:\Users\Acer\frontend\`
-| الملف | الحالة | الوصف |
-|------|--------|-------|
-| `admin-dashboard-FINAL.html` | **النسخة النهائية** | لوحة الأدمن، رفع عبر الـ backend |
-| `client-portal-FINAL.html` | **النسخة النهائية** | بوابة العميل، رفع عبر الـ backend |
-| `admin-dashboard-fixed.html` | نسخة سابقة | login تجريبي + لوحة إعدادات |
-| `client-portal-fixed.html` | نسخة سابقة | بوابة عميل بالإيميل |
-| `dashboard-production.html` | نسخة سابقة | أول نسخة API حقيقي |
-| `dashboard.html` | mockup | النسخة الثابتة الأولى |
+تعديلات الجلسة على الملفين (محليًا):
+1. **شيل أي `/` زيادة من الـ base URL** قبل بناء الطلب (`state.baseUrl.replace(/\/+$/, '')`) — كان بيسبّب سلاش مزدوج → 404.
+2. **زر التحميل بيفتح `output_url` مباشرةً** (الرابط العام لملف WordPress) بدل ما ينده `/download` (اللي بيعمل redirect عابر للأصول → CORS error).
+3. (معالجة `X-API-Key` كانت سليمة أصلًا.)
 
-> **النسخ المعتمدة للرفع = ملفّي `*-FINAL.html` فقط.**
+> ⚠️ **مطلوب:** رفع `admin-dashboard.html` + `client-portal.html` المحدّثين على cPanel ثم `Ctrl+F5`، عشان التعديلات دي تفعّل على الموقع الحي.
+
+### سلسلة أخطاء الواجهة اللي اتحلّت (للتوثيق)
+`missing X-API-Key` (نسخة فرونت قديمة مرفوعة) → `شبكة/CORS` (base URL غلط في localStorage) → `404` (سلاش مزدوج) → `CORS عند التحميل` (redirect) → ✅ اتحلّت كلها. الباكند والـ CORS سليمين (متأكَّد بالاختبار المباشر).
 
 ---
 
-## 6) الحاجات الأمنية ⚠️ (الأهم)
+## 5) كيف بتشتغل الترجمة + الـ knowledge (مفحوص فعليًا)
 
-### مفاتيح مكشوفة — لازم تتعمل لها revoke فورًا
-خلال الشغل اتشاركت سرّين حقيقيين في المحادثة، وأي سرّ بيظهر في محادثة يُعتبر **مكشوفًا**:
+- `claude_service.translate_text()`: يختار collection (`_resolve_collection`) → يجيب `knowledge_context` عبر `retrieve_context()` (أعلى 6 chunks بتطابق الكلمات + كل قطع GLOBAL، سقف 60K حرف) → `system=SYSTEM_PROMPT` كامل → رسالة user منظّمة (KNOWLEDGE + SOURCE + تعليمات).
+- الـ knowledge مخزّن مسبقًا في `backend/knowledge/.knowledge_index.json` (**2415 chunk**، keys: `file/collection/text`). مفيش إعادة قراءة للـ PDFات الضخمة (7-100MB) وقت الترجمة.
+- إعادة بناء الـ index بعد أي تغيير في `backend/knowledge/`: عبر `knowledge_service.build_index()`.
 
-1. **WordPress Application Password** (للمستخدم `KarimAbdelazizz`)
-   - **revoke:** WordPress Admin → Users → Profile → Application Passwords → Revoke القديم.
-   - أنشئ واحدًا جديدًا → حُطّه في `WP_APP_PASSWORD` على Render فقط.
+### ⚠️ مشاكل جودة الـ knowledge (مكتشفة، لسه محتاجة حل)
+1. **استخراج النص من الـ PDF متلخبط (garbled)** للعربي (`pypdf`) — النص المُغذّى لـ Claude مشوّه.
+2. **محتوى F_Tenancy ضعيف**: غالبيته إيميلات/وكالة، مش نماذج عقود نضيفة (19 chunk فقط).
+3. **توزيع غير متوازن**: H_Medical=1464، C=318، B=266 ... بينما E_Government=6، D_POA=11، F_Tenancy=19.
 
-2. **Anthropic API Key** (`sk-ant-...`)
-   - **revoke:** https://console.anthropic.com/settings/keys → Revoke القديم → Create Key جديد.
-   - حدّث `ANTHROPIC_API_KEY` على Render فقط.
+---
 
-### قواعد أمان ثابتة (لازم تستمر)
-- لا تُكتب المفاتيح المكشوفة (Anthropic أو WordPress) في أي ملف أو commit — تم استخدام `CHANGE_ME` placeholders فقط.
-- لا يُوضع أي سرّ/مفتاح داخل الـ HTML — بيانات الاعتماد في `localStorage` عبر لوحة الإعدادات ⚙️، أو في `backend/.env` فقط.
-- لا commit/push لـ git إلا بطلب صريح.
+## 6) الخطوات الجاية (Next steps)
+
+1. **[واجهة]** رفع `admin-dashboard.html` + `client-portal.html` المحدّثين على cPanel ثم `Ctrl+F5`، وتجربة زر "تحميل".
+2. **[جودة]** تحسين استخراج نص الـ knowledge: تجربة `pdfplumber` بدل `pypdf` و/أو OCR للـ PDFات المصوّرة، ثم إعادة بناء الـ index. (اقتراح: نبدأ باختبار مقارنة على `F_Tenancy_Real_Estate.pdf`.)
+3. **[جودة]** إضافة نماذج عقود/مستندات نضيفة فعلية لكل collection (خصوصًا الضعيفة).
+4. **[اختياري]** تحويل خانة `legal_domain` في الفرونت لقائمة منسدلة بالـ 9 أكواد عشان legal_domain يطابق دايمًا.
+5. **[تشغيل]** الـ jobs العالقة القديمة (قبل commit `067ebfb`) تُعاد بـ `POST /api/v1/translations/{id}/retry` (+ X-API-Key).
+
+---
+
+## 7) الأمان ⚠️ (قائم — مهم)
+
+- **مفاتيح مكشوفة لازم revoke:** WordPress Application Password (للمستخدم `KarimAbdelazizz`) + Anthropic API Key — اتشاركوا في محادثات سابقة فيُعتبروا مكشوفين. دوّرهم، وحدّث القيم على **Render Environment فقط**.
+- لا تُكتب أي أسرار في الكود/commits — `CHANGE_ME` placeholders فقط في `.env.example`.
+- لا أسرار داخل الـ HTML — بيانات الاعتماد في `localStorage` عبر ⚙️ أو `backend/.env` فقط.
 - `backend/.env` فيه أسرار حقيقية وهو gitignored — لا يُقرأ/يُكشف/يُكتب فوقه.
 
+### متغيّرات بيئة Render المطلوبة
+`ANTHROPIC_API_KEY` · `SECRET_KEY` · `API_KEY` · `DATABASE_URL` · `WP_BASE_URL` · `WP_USER` · `WP_APP_PASSWORD` · `CORS_ORIGINS`.
+
 ---
 
-## 7) قيود لا أقدر أتجاوزها (محتاجة تدخّلك)
-- **لا أقدر أرفع ملفات HTML على moajamalmaani.com** — مفيش وصول FTP/SSH/لوحة تحكم. الرفع يدوي عبر cPanel.
-- **لا أقدر أفتح الروابط الحيّة للتأكد من التحميل** — مفيش متصفح/وصول للموقع.
-- **لا أقدر أعمل deploy على Render بنفسي** — محتاج commit/push (بطلب صريح) أو Manual Deploy منك.
+## 8) قيود تحتاج تدخّل المستخدم (لا أقدر أعملها)
+
+- رفع ملفات HTML على moajamalmaani.com — يدوي عبر cPanel (مفيش FTP/SSH).
+- إعداد متغيّرات البيئة / Manual Deploy على Render.
+- revoke/تدوير المفاتيح المكشوفة.

@@ -1,3 +1,4 @@
+import json
 import tempfile
 import uuid
 from datetime import datetime
@@ -16,7 +17,11 @@ from app.models.client import Client
 from app.models.erp import Notification
 from app.models.translation_job import JobStatus, TranslationJob
 from app.schemas.translation import TranslationJobCreateResponse, TranslationJobOut
-from app.services.docx_service import build_translated_docx
+from app.services.docx_service import (
+    build_docx_from_layout_plan,
+    build_translated_docx,
+    parse_layout_plan,
+)
 from app.services.file_extract_service import extract_text, render_pdf_to_images
 from app.services.invoicing_service import create_invoice_for_translation_job
 from app.services.claude_service import translate_document_images, translate_text
@@ -91,7 +96,7 @@ def _run_translation_job(job_id: str) -> None:
                 f"[job {job_id}] vision translate {len(images)}/{total_pages} page(s)",
                 flush=True,
             )
-            translated_text = translate_document_images(
+            layout_plan_json = translate_document_images(
                 images,
                 routing_text=routing_text,
                 legal_domain=job.legal_domain,
@@ -110,19 +115,34 @@ def _run_translation_job(job_id: str) -> None:
                     "تعذّر استخراج نص من الملف. قد يكون مصوّراً (scanned) أو محمياً."
                 )
             print(f"[job {job_id}] translating...", flush=True)
-            translated_text = translate_text(
+            layout_plan_json = translate_text(
                 source_text,
                 source_language=job.source_language,
                 target_language=job.target_language,
                 legal_domain=job.legal_domain,
                 timeout=300,
             )
-        print(f"[job {job_id}] translated length={len(translated_text)}", flush=True)
+        print(f"[job {job_id}] layout_plan length={len(layout_plan_json)}", flush=True)
 
-        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as output_tmp:
-            output_tmp_path = output_tmp.name
-        build_translated_docx(translated_text, output_tmp_path, target_language=job.target_language)
-        output_bytes = Path(output_tmp_path).read_bytes()
+        # Translation now returns a layout_plan_json string -> parse it and
+        # build a professional RTL DOCX. If the JSON can't be parsed, fall back
+        # to rendering the raw model output as plain text so the job still
+        # delivers a file instead of failing outright.
+        try:
+            layout_plan = parse_layout_plan(layout_plan_json)
+            output_bytes = build_docx_from_layout_plan(layout_plan)
+            print(
+                f"[job {job_id}] built docx from {len(layout_plan.get('blocks', []))} block(s)",
+                flush=True,
+            )
+        except (ValueError, json.JSONDecodeError) as exc:
+            print(f"[job {job_id}] layout_plan parse failed ({exc}); using plain-text fallback", flush=True)
+            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as output_tmp:
+                output_tmp_path = output_tmp.name
+            build_translated_docx(
+                layout_plan_json, output_tmp_path, target_language=job.target_language
+            )
+            output_bytes = Path(output_tmp_path).read_bytes()
 
         output_filename = f"translated_{Path(job.source_filename).stem}.docx"
         media = upload_media_to_wordpress(

@@ -31,18 +31,11 @@ def _resolve_collection(legal_domain: str | None, source_text: str) -> str:
     return route_collection(source_text)
 
 
-def _knowledge_context(routing_text: str, collection: str) -> str:
-    """Build the (size-capped) knowledge block for a translation: the closest
-    collection samples plus the global controlling rules, under headings."""
+def _knowledge_chunks(routing_text: str, collection: str) -> tuple[str, str]:
+    """Return (layout_samples, legal_rules) for a translation, size-capped:
+    the closest collection samples and the global controlling rules."""
     layout_chunks, global_chunks = retrieve_split(routing_text, collection, top_k=_KNOWLEDGE_TOP_K)
-    layout_chunks = layout_chunks[:_MAX_KNOWLEDGE_CHARS]
-    global_chunks = global_chunks[:_MAX_KNOWLEDGE_CHARS]
-    return (
-        f"### نماذج وأمثلة ترجمات ({collection}):\n"
-        f"{layout_chunks}\n\n"
-        f"### الاشتراطات القانونية والمصطلحات:\n"
-        f"{global_chunks}"
-    )
+    return layout_chunks[:_MAX_KNOWLEDGE_CHARS], global_chunks[:_MAX_KNOWLEDGE_CHARS]
 
 
 def translate_text(
@@ -52,25 +45,22 @@ def translate_text(
     legal_domain: str | None = None,
     timeout: int = 300,
 ) -> str:
-    """Send extracted document text to Claude and return the translated text.
+    """Translate extracted document text and return a layout_plan_json STRING.
 
-    Grounds the translation in the matched knowledge collection: resolve the
-    collection (preferring an explicit legal_domain), pull the most relevant
-    pre-indexed chunks from backend/knowledge/ as the knowledge context, and
-    feed them alongside the full master SYSTEM_PROMPT.
+    Used for DOCX/TXT sources (clean text). Resolves the knowledge collection,
+    feeds the matched samples + global rules + source text, and asks the model
+    for ONLY the layout_plan_json (parsed/rendered downstream into a DOCX).
     """
     collection = _resolve_collection(legal_domain, text)
-    knowledge_context = _knowledge_context(text, collection)
+    layout_chunks, global_chunks = _knowledge_chunks(text, collection)
 
     user_content = (
-        f"## المراجع من قاعدة المعرفة:\n\n"
-        f"{knowledge_context}\n\n"
-        f"---\n\n"
-        f"## المستند المطلوب ترجمته:\n\n"
-        f"{text}\n\n"
-        f"---\n\n"
-        f"ابدأ بالترجمة الاحترافية الكاملة الآن إلى {target_language}.\n"
-        f"لا تكتب مقدمة أو تعليق — فقط الترجمة النهائية الجاهزة."
+        f"## Knowledge Collection ({collection}):\n\n"
+        f"### Layout Samples:\n{layout_chunks}\n\n"
+        f"### Legal Rules:\n{global_chunks}\n\n"
+        f"## Source Document:\n{text}\n\n"
+        f"Translate this document to {target_language} and output ONLY a valid "
+        f"layout_plan_json.\nNo explanation. No markdown. Only JSON."
     )
 
     response = _client.messages.create(
@@ -101,7 +91,7 @@ def translate_document_images(
     collection and retrieve reference chunks - it is NOT the content source.
     """
     collection = _resolve_collection(legal_domain, routing_text)
-    knowledge_context = _knowledge_context(routing_text, collection)
+    layout_chunks, global_chunks = _knowledge_chunks(routing_text, collection)
 
     content: list[dict] = []
     for image_bytes in images:
@@ -117,22 +107,13 @@ def translate_document_images(
         )
 
     user_text = (
-        "أنت ترى المستند المطلوب ترجمته.\n\n"
-        "الخطوة 1 - تحليل بصري:\n"
-        "- ما نوع هذا المستند بالضبط؟\n"
-        "- ما هيكله (جداول، حقول، بنود، توقيعات، أختام)؟\n"
-        "- ما الـ collection المناسبة له؟ (A/B/C/D/E/F/G/H/I)\n\n"
-        "الخطوة 2 - المراجع:\n"
-        f"{knowledge_context}\n\n"
-        "الخطوة 3 - الترجمة:\n"
-        f"ترجم المستند كاملاً إلى {target_language} مع الحفاظ على:\n"
-        "- نفس الهيكل والتنسيق الذي تراه\n"
-        "- نفس ترتيب الحقول والجداول\n"
-        "- نفس مواضع التوقيعات والأختام\n"
-        "- RTL عربي صحيح\n"
-        "- المصطلحات القانونية الإماراتية المعتمدة\n\n"
+        f"## Knowledge Collection ({collection}):\n\n"
+        f"### Layout Samples:\n{layout_chunks}\n\n"
+        f"### Legal Rules:\n{global_chunks}\n\n"
+        f"## Source Document (examine it visually in the images above):\n"
         f"{truncated_note}"
-        "ابدأ الترجمة الآن — بدون مقدمة أو تعليق."
+        f"Translate this document to {target_language} and output ONLY a valid "
+        f"layout_plan_json.\nNo explanation. No markdown. Only JSON."
     )
     content.append({"type": "text", "text": user_text})
 
