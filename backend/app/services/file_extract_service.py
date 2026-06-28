@@ -14,19 +14,30 @@ _MIN_PDF_TEXT_CHARS = 20
 _OCR_DPI = 120
 _OCR_MAX_PAGES = 10
 
+# Vision-based translation: render pages a bit sharper than OCR (Claude reads
+# the whole page), as JPEG to stay under Anthropic's per-image/request size
+# limits, capped so the request stays within the token/size budget.
+_VISION_DPI = 150
+_VISION_MAX_PAGES = 10
+
 
 class UnsupportedFileType(Exception):
     pass
 
 
-def extract_text(path: str) -> str:
-    """Extract raw text from an uploaded .docx, .pdf or .txt file."""
+def extract_text(path: str, ocr_fallback: bool = True) -> str:
+    """Extract raw text from an uploaded .docx, .pdf or .txt file.
+
+    For PDFs, `ocr_fallback=False` returns whatever the embedded text layer
+    yields (even if empty) without the expensive Claude-Vision OCR pass - used
+    when the text is only needed for cheap routing/retrieval, not as content.
+    """
     suffix = Path(path).suffix.lower()
 
     if suffix == ".docx":
         return _extract_docx(path)
     if suffix == ".pdf":
-        return _extract_pdf(path)
+        return _extract_pdf(path, ocr_fallback=ocr_fallback)
     if suffix == ".txt":
         return Path(path).read_text(encoding="utf-8", errors="ignore")
 
@@ -50,14 +61,48 @@ def _extract_docx(path: str) -> str:
     return "\n".join(parts)
 
 
-def _extract_pdf(path: str) -> str:
+def _extract_pdf(path: str, ocr_fallback: bool = True) -> str:
     reader = PdfReader(path)
     text = "\n".join(page.extract_text() or "" for page in reader.pages)
-    if len(text.strip()) >= _MIN_PDF_TEXT_CHARS:
+    if len(text.strip()) >= _MIN_PDF_TEXT_CHARS or not ocr_fallback:
         return text
     # Empty/near-empty text layer -> the PDF is almost certainly scanned. Fall
     # back to rendering each page to an image and OCR'ing it with Claude Vision.
     return _ocr_pdf(path)
+
+
+def render_pdf_to_images(
+    path: str,
+    dpi: int = _VISION_DPI,
+    max_pages: int = _VISION_MAX_PAGES,
+    quality: int = 85,
+) -> tuple[list[bytes], int]:
+    """Render up to `max_pages` PDF pages to JPEG bytes for a Claude Vision
+    request, one page at a time to keep memory low.
+
+    Returns (images, total_pages) where total_pages is the real page count so
+    the caller can note when a long document was truncated.
+    """
+    from pdf2image import convert_from_path, pdfinfo_from_path
+
+    try:
+        total_pages = pdfinfo_from_path(path)["Pages"]
+    except Exception:  # noqa: BLE001 - fall back to the cap if page count is unknown
+        total_pages = max_pages
+    page_count = min(total_pages, max_pages)
+
+    images: list[bytes] = []
+    for page_num in range(1, page_count + 1):
+        rendered = convert_from_path(path, dpi=dpi, first_page=page_num, last_page=page_num)
+        if not rendered:
+            continue
+        img = rendered[0].convert("RGB")  # JPEG has no alpha channel
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=quality)
+        images.append(buf.getvalue())
+        del img, buf, rendered
+        gc.collect()
+    return images, total_pages
 
 
 def _ocr_pdf(path: str) -> str:

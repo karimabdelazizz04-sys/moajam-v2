@@ -31,6 +31,20 @@ def _resolve_collection(legal_domain: str | None, source_text: str) -> str:
     return route_collection(source_text)
 
 
+def _knowledge_context(routing_text: str, collection: str) -> str:
+    """Build the (size-capped) knowledge block for a translation: the closest
+    collection samples plus the global controlling rules, under headings."""
+    layout_chunks, global_chunks = retrieve_split(routing_text, collection, top_k=_KNOWLEDGE_TOP_K)
+    layout_chunks = layout_chunks[:_MAX_KNOWLEDGE_CHARS]
+    global_chunks = global_chunks[:_MAX_KNOWLEDGE_CHARS]
+    return (
+        f"### نماذج وأمثلة ترجمات ({collection}):\n"
+        f"{layout_chunks}\n\n"
+        f"### الاشتراطات القانونية والمصطلحات:\n"
+        f"{global_chunks}"
+    )
+
+
 def translate_text(
     text: str,
     source_language: str = "auto-detect",
@@ -46,16 +60,11 @@ def translate_text(
     feed them alongside the full master SYSTEM_PROMPT.
     """
     collection = _resolve_collection(legal_domain, text)
-    layout_chunks, global_chunks = retrieve_split(text, collection, top_k=_KNOWLEDGE_TOP_K)
-    layout_chunks = layout_chunks[:_MAX_KNOWLEDGE_CHARS]
-    global_chunks = global_chunks[:_MAX_KNOWLEDGE_CHARS]
+    knowledge_context = _knowledge_context(text, collection)
 
     user_content = (
         f"## المراجع من قاعدة المعرفة:\n\n"
-        f"### نماذج وأمثلة ترجمات ({collection}):\n"
-        f"{layout_chunks}\n\n"
-        f"### الاشتراطات القانونية والمصطلحات:\n"
-        f"{global_chunks}\n\n"
+        f"{knowledge_context}\n\n"
         f"---\n\n"
         f"## المستند المطلوب ترجمته:\n\n"
         f"{text}\n\n"
@@ -69,6 +78,69 @@ def translate_text(
         max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_content}],
+        timeout=timeout,
+    )
+
+    return "".join(block.text for block in response.content if block.type == "text")
+
+
+def translate_document_images(
+    images: list[bytes],
+    routing_text: str = "",
+    legal_domain: str | None = None,
+    target_language: str = "Arabic",
+    truncated_note: str = "",
+    media_type: str = "image/jpeg",
+    timeout: int = 300,
+) -> str:
+    """Translate a document Claude sees *visually*: send the rendered page
+    images as vision blocks so the model preserves the real on-page layout
+    (tables, fields, stamps, signatures) instead of working from flattened text.
+
+    `routing_text` is cheap embedded text used only to pick the knowledge
+    collection and retrieve reference chunks - it is NOT the content source.
+    """
+    collection = _resolve_collection(legal_domain, routing_text)
+    knowledge_context = _knowledge_context(routing_text, collection)
+
+    content: list[dict] = []
+    for image_bytes in images:
+        content.append(
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": media_type,
+                    "data": base64.standard_b64encode(image_bytes).decode("utf-8"),
+                },
+            }
+        )
+
+    user_text = (
+        "أنت ترى المستند المطلوب ترجمته.\n\n"
+        "الخطوة 1 - تحليل بصري:\n"
+        "- ما نوع هذا المستند بالضبط؟\n"
+        "- ما هيكله (جداول، حقول، بنود، توقيعات، أختام)؟\n"
+        "- ما الـ collection المناسبة له؟ (A/B/C/D/E/F/G/H/I)\n\n"
+        "الخطوة 2 - المراجع:\n"
+        f"{knowledge_context}\n\n"
+        "الخطوة 3 - الترجمة:\n"
+        f"ترجم المستند كاملاً إلى {target_language} مع الحفاظ على:\n"
+        "- نفس الهيكل والتنسيق الذي تراه\n"
+        "- نفس ترتيب الحقول والجداول\n"
+        "- نفس مواضع التوقيعات والأختام\n"
+        "- RTL عربي صحيح\n"
+        "- المصطلحات القانونية الإماراتية المعتمدة\n\n"
+        f"{truncated_note}"
+        "ابدأ الترجمة الآن — بدون مقدمة أو تعليق."
+    )
+    content.append({"type": "text", "text": user_text})
+
+    response = _client.messages.create(
+        model=settings.ANTHROPIC_MODEL,
+        max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": content}],
         timeout=timeout,
     )
 

@@ -17,9 +17,9 @@ from app.models.erp import Notification
 from app.models.translation_job import JobStatus, TranslationJob
 from app.schemas.translation import TranslationJobCreateResponse, TranslationJobOut
 from app.services.docx_service import build_translated_docx
-from app.services.file_extract_service import extract_text
+from app.services.file_extract_service import extract_text, render_pdf_to_images
 from app.services.invoicing_service import create_invoice_for_translation_job
-from app.services.claude_service import translate_text
+from app.services.claude_service import translate_document_images, translate_text
 from app.services.wordpress_service import (
     WordPressMediaError,
     download_source_file,
@@ -70,23 +70,53 @@ def _run_translation_job(job_id: str) -> None:
             source_tmp.write(source_bytes)
             source_tmp_path = source_tmp.name
 
-        source_text = extract_text(source_tmp_path)
-        print(
-            f"[job {job_id}] extracted text length={len(source_text) if source_text else 0}",
-            flush=True,
-        )
-        if not source_text or not source_text.strip():
-            raise ValueError(
-                "تعذّر استخراج نص من الملف. قد يكون مصوّراً (scanned) أو محمياً."
+        if suffix == ".pdf":
+            # Vision path: Claude sees the actual pages so it preserves on-page
+            # layout. Cheap embedded text (no OCR) is used ONLY to route the
+            # collection and retrieve reference chunks - not as the content.
+            try:
+                routing_text = extract_text(source_tmp_path, ocr_fallback=False)
+            except Exception:  # noqa: BLE001
+                routing_text = ""
+            images, total_pages = render_pdf_to_images(source_tmp_path)
+            if not images:
+                raise ValueError("تعذّر تحويل صفحات الملف لصور للترجمة البصرية.")
+            note = ""
+            if total_pages > len(images):
+                note = (
+                    f"ملاحظة: المستند يحتوي {total_pages} صفحة؛ "
+                    f"تُرجمت أول {len(images)} صفحات فقط.\n\n"
+                )
+            print(
+                f"[job {job_id}] vision translate {len(images)}/{total_pages} page(s)",
+                flush=True,
             )
-        print(f"[job {job_id}] translating...", flush=True)
-        translated_text = translate_text(
-            source_text,
-            source_language=job.source_language,
-            target_language=job.target_language,
-            legal_domain=job.legal_domain,
-            timeout=300,
-        )
+            translated_text = translate_document_images(
+                images,
+                routing_text=routing_text,
+                legal_domain=job.legal_domain,
+                target_language=job.target_language,
+                truncated_note=note,
+                timeout=300,
+            )
+        else:
+            source_text = extract_text(source_tmp_path)
+            print(
+                f"[job {job_id}] extracted text length={len(source_text) if source_text else 0}",
+                flush=True,
+            )
+            if not source_text or not source_text.strip():
+                raise ValueError(
+                    "تعذّر استخراج نص من الملف. قد يكون مصوّراً (scanned) أو محمياً."
+                )
+            print(f"[job {job_id}] translating...", flush=True)
+            translated_text = translate_text(
+                source_text,
+                source_language=job.source_language,
+                target_language=job.target_language,
+                legal_domain=job.legal_domain,
+                timeout=300,
+            )
         print(f"[job {job_id}] translated length={len(translated_text)}", flush=True)
 
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as output_tmp:
