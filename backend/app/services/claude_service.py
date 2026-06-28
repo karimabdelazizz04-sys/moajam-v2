@@ -20,6 +20,22 @@ _KNOWLEDGE_TOP_K = 6
 _MAX_KNOWLEDGE_CHARS = 60000
 _ANALYSIS_MAX_TOKENS = 2048
 
+# Prepended to every translation user message: forces a thorough knowledge
+# search before falling back to mirroring the source, and the stamps/seals
+# marking rule. Mirrors the STEP 1-3 logic in the system prompt.
+_MANDATORY_PROCESS = """MANDATORY PROCESS — FOLLOW IN ORDER:
+Step 1: Examine the source document visually (all pages).
+Step 2: Search the knowledge samples THOROUGHLY for a matching layout.
+        - Check every chunk in the selected collection
+        - A partial match counts — use it
+        - Only skip if truly nothing matches
+Step 3: If match found → use sample as layout authority
+        If no match after thorough search → mirror source document exactly
+Step 4: Translate all text to Arabic with RTL
+Step 5: Mark all stamps/signatures/seals with standard Arabic notes
+Step 6: Output layout_plan_json only — no explanation
+"""
+
 
 def _match_collection(value: str | None) -> str | None:
     """Map a free-form collection label onto a known collection code, tolerating
@@ -123,6 +139,7 @@ def translate_text(
     layout_chunks, global_chunks = _knowledge_chunks(text, collection)
 
     user_content = (
+        f"{_MANDATORY_PROCESS}\n"
         f"## Knowledge Collection ({collection}):\n\n"
         f"### Layout Samples:\n{layout_chunks}\n\n"
         f"### Legal Rules:\n{global_chunks}\n\n"
@@ -229,6 +246,7 @@ def translate_document_images(
         )
 
     user_text = (
+        f"{_MANDATORY_PROCESS}\n"
         f"## Knowledge Collection ({collection}):\n\n"
         f"### Layout Samples:\n{layout_chunks}\n\n"
         f"### Legal Rules:\n{global_chunks}\n"
