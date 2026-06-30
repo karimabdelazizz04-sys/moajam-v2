@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 import re
 
 from anthropic import Anthropic
@@ -122,6 +123,44 @@ def _knowledge_chunks(routing_text: str, collection: str) -> tuple[str, str]:
     return layout_chunks[:_MAX_KNOWLEDGE_CHARS], global_chunks[:_MAX_KNOWLEDGE_CHARS]
 
 
+# Knowledge documents uploaded to the Anthropic Files API via
+# scripts/upload_knowledge_to_anthropic.py. translate_text grounds itself in
+# these files (served by file_id) instead of the local keyword index. Loaded
+# best-effort: a missing/invalid map must never break app import — an empty map
+# just means no document blocks are attached.
+_FILE_IDS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "knowledge", ".anthropic_file_ids.json"
+)
+_MASTER_RULES_FILE = "01_ALL_IN_ONE_KNOWLEDGE_MASTER_RULES.txt"
+
+try:
+    with open(_FILE_IDS_PATH, encoding="utf-8") as _ids_file:
+        _ANTHROPIC_FILE_IDS = json.load(_ids_file)
+except (OSError, ValueError):
+    _ANTHROPIC_FILE_IDS = {}
+
+
+def _document_block(filename: str) -> dict | None:
+    """A Files-API document content block for an uploaded knowledge file, or
+    None when that file has no known file_id."""
+    file_id = _ANTHROPIC_FILE_IDS.get(filename)
+    if not file_id:
+        return None
+    return {"type": "document", "source": {"type": "file", "file_id": file_id}}
+
+
+def _knowledge_document_blocks(collection: str) -> list[dict]:
+    """Grounding documents for a translation: the global master rules plus the
+    matched collection's reference file, both served from the Anthropic Files
+    API. Returns whatever is available (possibly empty) - never raises."""
+    blocks: list[dict] = []
+    for filename in (_MASTER_RULES_FILE, f"{collection}.pdf"):
+        block = _document_block(filename)
+        if block:
+            blocks.append(block)
+    return blocks
+
+
 def translate_text(
     text: str,
     source_language: str = "auto-detect",
@@ -132,27 +171,34 @@ def translate_text(
     """Translate extracted document text and return a layout_plan_json STRING.
 
     Used for DOCX/TXT sources (clean text). Resolves the knowledge collection,
-    feeds the matched samples + global rules + source text, and asks the model
+    attaches the matching knowledge documents from the Anthropic Files API
+    (master rules + collection samples) plus the source text, and asks the model
     for ONLY the layout_plan_json (parsed/rendered downstream into a DOCX).
     """
     collection = _resolve_collection(legal_domain, text)
-    layout_chunks, global_chunks = _knowledge_chunks(text, collection)
 
-    user_content = (
-        f"{_MANDATORY_PROCESS}\n"
-        f"## Knowledge Collection ({collection}):\n\n"
-        f"### Layout Samples:\n{layout_chunks}\n\n"
-        f"### Legal Rules:\n{global_chunks}\n\n"
-        f"## Source Document:\n{text}\n\n"
-        f"Translate this document to {target_language} and output ONLY a valid "
-        f"layout_plan_json.\nNo explanation. No markdown. Only JSON."
+    content: list[dict] = _knowledge_document_blocks(collection)
+    content.append(
+        {
+            "type": "text",
+            "text": (
+                f"{_MANDATORY_PROCESS}\n"
+                f"## Knowledge Collection: {collection}\n"
+                f"(Master rules and matching layout samples are attached above "
+                f"as documents.)\n\n"
+                f"## Source Document:\n{text}\n\n"
+                f"Translate this document to {target_language} and output ONLY a "
+                f"valid layout_plan_json.\nNo explanation. No markdown. Only JSON."
+            ),
+        }
     )
 
-    response = _client.messages.create(
+    response = _client.beta.messages.create(
         model=settings.ANTHROPIC_MODEL,
         max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_content}],
+        messages=[{"role": "user", "content": content}],
+        betas=["files-api-2025-04-14"],
         timeout=timeout,
     )
 
