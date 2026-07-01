@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة الإدارة | Moajam Almaani (Demo Login)</title>
+<style>
+  :root{
+    --bg:#0f172a;--sidebar:#111827;--sidebar-hover:#1f2937;--accent:#4f46e5;--accent-light:#6366f1;
+    --card:#ffffff;--page-bg:#f4f6fb;--text-dark:#111827;--text-muted:#6b7280;--border:#e5e7eb;
+    --success:#16a34a;--warning:#d97706;--danger:#dc2626;--info:#2563eb;--radius:12px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Tahoma",sans-serif;background:var(--page-bg);color:var(--text-dark);}
+
+  #login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1e1b4b,#312e81 50%,#4f46e5);display:flex;align-items:center;justify-content:center;z-index:1000;}
+  .login-box{background:var(--card);width:100%;max-width:380px;padding:36px 32px;border-radius:var(--radius);box-shadow:0 20px 50px rgba(0,0,0,.35);text-align:center;}
+  .login-box h1{margin:0 0 6px;font-size:22px;color:var(--accent);}
+  .login-box p{margin:0 0 24px;color:var(--text-muted);font-size:14px;}
+  .demo-pill{display:inline-block;background:#fef3c7;color:#92400e;font-size:11.5px;padding:4px 10px;border-radius:20px;margin-bottom:18px;font-weight:600;}
+  .login-box input{width:100%;padding:12px 14px;margin-bottom:14px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#f9fafb;}
+  .login-box input:focus{outline:2px solid var(--accent-light);background:#fff;}
+  .login-box button{width:100%;padding:12px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
+  .login-box button:hover{background:var(--accent-light);}
+  .login-msg{font-size:13px;margin-top:12px;min-height:18px;color:var(--danger);}
+
+  #app{display:none;min-height:100vh;}
+  .layout{display:flex;min-height:100vh;}
+  .sidebar{width:250px;flex-shrink:0;background:var(--sidebar);color:#cbd5e1;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:transform .25s ease;z-index:200;}
+  .sidebar .brand{display:flex;align-items:center;gap:10px;padding:22px 20px;border-bottom:1px solid #1f2937;}
+  .sidebar .brand .logo{width:34px;height:34px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;}
+  .sidebar .brand span{font-weight:700;color:#fff;font-size:16px;}
+  .nav-list{list-style:none;margin:0;padding:14px 10px;flex:1;overflow-y:auto;}
+  .nav-list li{margin-bottom:4px;}
+  .nav-list button{width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;color:inherit;padding:12px 14px;border-radius:8px;font-size:14px;cursor:pointer;text-align:right;transition:.15s;}
+  .nav-list button .icon{font-size:16px;width:20px;text-align:center;}
+  .nav-list button:hover{background:var(--sidebar-hover);color:#fff;}
+  .nav-list button.active{background:var(--accent);color:#fff;font-weight:600;}
+  .sidebar-footer{padding:14px 16px;border-top:1px solid #1f2937;font-size:12px;color:#64748b;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .sidebar-footer button{background:none;border:1px solid #374151;color:#cbd5e1;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;}
+  .sidebar-footer button:hover{background:#1f2937;color:#fff;}
+  .menu-toggle{display:none;background:var(--accent);color:#fff;border:none;width:40px;height:40px;border-radius:8px;font-size:18px;cursor:pointer;}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .topbar{background:#fff;border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:10px;}
+  .topbar h2{margin:0;font-size:19px;}
+  .right-group{display:flex;align-items:center;gap:14px;}
+  .user-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);}
+  .user-chip .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;}
+  .icon-btn{background:none;border:1px solid var(--border);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;}
+  .icon-btn:hover{background:#f3f4f6;}
+  .banner{padding:10px 28px;font-size:13px;display:none;align-items:center;justify-content:space-between;gap:10px;}
+  .banner.show{display:flex;}
+  .banner.demo{background:#fff7ed;color:#92400e;border-bottom:1px solid #fed7aa;}
+  .banner button{background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:12.5px;}
+  .content{padding:24px 28px 60px;flex:1;}
+  .tabs{display:flex;gap:6px;border-bottom:2px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
+  .tabs button{background:none;border:none;padding:10px 18px;font-size:14px;color:var(--text-muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;font-weight:500;}
+  .tabs button:hover{color:var(--accent);}
+  .tabs button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .page{display:none;}
+  .page.active{display:block;}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:26px;}
+  .stat-card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border);}
+  .stat-card .label{font-size:13px;color:var(--text-muted);margin-bottom:8px;}
+  .stat-card .value{font-size:26px;font-weight:700;}
+  .stat-card .trend{font-size:12px;margin-top:6px;color:var(--text-muted);}
+  .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);padding:22px;margin-bottom:20px;}
+  .card h3{margin:0 0 16px;font-size:16px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{padding:12px 10px;text-align:right;border-bottom:1px solid var(--border);}
+  th{color:var(--text-muted);font-weight:600;font-size:12.5px;text-transform:uppercase;}
+  tbody tr:hover{background:#f9fafb;}
+  .badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;}
+  .badge.success{background:#dcfce7;color:var(--success);}
+  .badge.warning{background:#fef3c7;color:var(--warning);}
+  .badge.danger{background:#fee2e2;color:var(--danger);}
+  .badge.info{background:#e0e7ff;color:var(--accent);}
+  .badge.muted{background:#f1f5f9;color:var(--text-muted);}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+  .toolbar .filters{display:flex;gap:8px;flex-wrap:wrap;}
+  .toolbar input[type=search],.toolbar select{padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:180px;}
+  .btn{background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:hover{background:var(--accent-light);}
+  .btn:disabled{opacity:.6;cursor:not-allowed;}
+  .btn.outline{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .btn.outline:hover{background:#eef2ff;}
+  .btn.sm{padding:6px 12px;font-size:12.5px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .form-grid .full{grid-column:1/-1;}
+  .form-field label{display:block;font-size:13px;margin-bottom:6px;color:var(--text-muted);font-weight:500;}
+  .form-field input,.form-field select,.form-field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;}
+  .form-field textarea{resize:vertical;min-height:80px;}
+  .form-field .hint{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+  .placeholder-report{border:2px dashed var(--border);border-radius:var(--radius);padding:50px 20px;text-align:center;color:var(--text-muted);}
+  .placeholder-report .big{font-size:36px;margin-bottom:10px;}
+  .alert{padding:12px 16px;border-radius:8px;font-size:13.5px;margin-bottom:16px;display:none;}
+  .alert.show{display:block;}
+  .alert.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+  .alert.success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
+  .alert.info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .skeleton{background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:skeleton 1.4s ease infinite;border-radius:6px;}
+  @keyframes skeleton{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+  .progress-wrap{background:#e5e7eb;border-radius:999px;height:8px;overflow:hidden;margin-top:8px;}
+  .progress-bar{height:100%;background:var(--accent);width:0%;transition:width .4s ease;border-radius:999px;}
+  #toast-container{position:fixed;bottom:20px;left:20px;z-index:2000;display:flex;flex-direction:column;gap:10px;}
+  .toast{background:#111827;color:#fff;padding:12px 18px;border-radius:8px;font-size:13.5px;box-shadow:0 6px 20px rgba(0,0,0,.25);min-width:240px;max-width:340px;animation:toastIn .25s ease;}
+  .toast.success{border-right:4px solid var(--success);}
+  .toast.error{border-right:4px solid var(--danger);}
+  .toast.info{border-right:4px solid var(--info);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1500;align-items:center;justify-content:center;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:var(--radius);padding:26px;width:100%;max-width:460px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;}
+  .modal h3{margin:0 0 6px;}
+  .modal p.sub{font-size:12.5px;color:var(--text-muted);margin:0 0 18px;}
+  .modal .modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+  @media (max-width:980px){.stats-grid{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}}
+  @media (max-width:768px){
+    .menu-toggle{display:inline-flex;align-items:center;justify-content:center;}
+    .sidebar{position:fixed;top:0;right:0;height:100vh;transform:translateX(100%);}
+    .sidebar.open{transform:translateX(0);}
+    .overlay.show{display:block;}
+    .topbar{padding:14px 16px;}
+    .banner{padding:10px 16px;}
+    .content{padding:18px 16px 50px;}
+    .stats-grid{grid-template-columns:1fr 1fr;gap:12px;}
+    .stat-card .value{font-size:21px;}
+    table{font-size:12.5px;}
+    th,td{padding:9px 6px;}
+  }
+  @media (max-width:480px){
+    .stats-grid{grid-template-columns:1fr;}
+    .tabs{gap:2px;}
+    .tabs button{padding:8px 12px;font-size:13px;}
+    #toast-container{left:10px;right:10px;}
+    .toast{max-width:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h1>تسجيل الدخول</h1>
+    <div class="demo-pill">⚠️ وضع تجريبي: أي بيانات تدخلها هنا تدخلك مباشرة</div>
+    <p>هذا اللوجن شكلي فقط. للوصول للبيانات الحقيقية، اضبط Bearer Token و X-API-Key من ⚙️ الإعدادات بعد الدخول.</p>
+    <form id="login-form">
+      <input type="text" id="login-user" placeholder="اسم المستخدم (أي قيمة)" required>
+      <input type="password" id="login-pass" placeholder="كلمة المرور (أي قيمة)" required>
+      <button type="submit">دخول</button>
+      <div class="login-msg" id="login-msg"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app">
+  <div id="toast-container"></div>
+
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+      <h3>إعدادات الاتصال بالـ API</h3>
+      <p class="sub">
+        تُحفظ هذه القيم في متصفحك فقط (localStorage) ولا تُكتب داخل هذا الملف أبداً.
+        لا تضع هنا أي مفتاح Anthropic — هذه الحقول خاصة بـ backend الموقع فقط.
+      </p>
+      <div class="form-field" style="margin-bottom:14px;"><label>Base URL</label><input type="text" id="settings-base-url"></div>
+      <div class="form-field" style="margin-bottom:14px;">
+        <label>X-API-Key (لمسارات الترجمة /api/v1/translations)</label>
+        <input type="password" id="settings-api-key" placeholder="اتركه فاضي لو غير متوفر">
+      </div>
+      <div class="form-field" style="margin-bottom:14px;">
+        <label>Bearer Token (لـ /clients و /invoices و /accounting/accounts)</label>
+        <input type="password" id="settings-bearer-token" placeholder="احصل عليه من /docs أو من فريق الباك إند">
+        <div class="hint">هذا اللوجن شكلي ولا يولّد توكن حقيقي. لو عايز بيانات حقيقية، حصّل التوكن بنفسك وحطه هنا.</div>
+      </div>
+      <div class="form-field">
+        <label>WordPress Media Upload (اختياري — لرفع ملفات حقيقية)</label>
+        <input type="text" id="settings-wp-url" placeholder="https://moajamalmaani.com" style="margin-bottom:8px;">
+        <input type="text" id="settings-wp-user" placeholder="WordPress username" style="margin-bottom:8px;">
+        <input type="password" id="settings-wp-app-password" placeholder="WordPress Application Password">
+        <div class="hint">لو فاضي، رفع الملفات هيشتغل في وضع Demo فقط (محاكاة وليس رفع حقيقي).</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn outline" id="settings-cancel">إغلاق</button>
+        <button class="btn" id="settings-save">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="logo">M</div><span>نظام الإدارة</span></div>
+      <ul class="nav-list" id="nav-list">
+        <li><button class="nav-btn active" data-page="dashboard"><span class="icon">📊</span> Dashboard</button></li>
+        <li><button class="nav-btn" data-page="translations"><span class="icon">📝</span> Translations</button></li>
+        <li><button class="nav-btn" data-page="clients"><span class="icon">👥</span> Clients Management</button></li>
+        <li><button class="nav-btn" data-page="invoicing"><span class="icon">🧾</span> Invoicing System</button></li>
+        <li><button class="nav-btn" data-page="erp"><span class="icon">📚</span> ERP &amp; Accounting</button></li>
+        <li><button class="nav-btn" data-page="knowledge"><span class="icon">📚</span> Knowledge Base</button></li>
+      </ul>
+      <div class="sidebar-footer">
+        <span id="current-user">—</span>
+        <div style="display:flex;gap:6px;">
+          <button id="open-settings-btn" title="إعدادات الـ API">⚙️</button>
+          <button id="logout-btn">خروج</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <button class="menu-toggle" id="menu-toggle">☰</button>
+          <h2 id="page-title">Dashboard</h2>
+        </div>
+        <div class="right-group">
+          <button class="icon-btn" id="refresh-btn" title="تحديث البيانات">⟳</button>
+          <div class="user-chip"><div class="avatar" id="avatar-letter">A</div><span id="topbar-user">Admin</span></div>
+        </div>
+      </div>
+
+      <div class="banner demo" id="demo-banner">
+        <span id="demo-banner-text">⚠️ وضع تجريبي — البيانات المعروضة Demo لعدم توفر Bearer Token / X-API-Key أو لتعذر الاتصال بالخادم.</span>
+        <button id="open-settings-from-banner">ضبط الإعدادات</button>
+      </div>
+
+      <div class="content">
+
+        <section class="page active" id="page-dashboard">
+          <div class="alert" id="dashboard-alert"></div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="label">إجمالي طلبات الترجمة</div><div class="value" id="stat-total">—</div><div class="trend">من /api/v1/translations</div></div>
+            <div class="stat-card"><div class="label">قيد التنفيذ</div><div class="value" id="stat-processing">—</div><div class="trend">processing + pending</div></div>
+            <div class="stat-card"><div class="label">مكتملة</div><div class="value" id="stat-done">—</div><div class="trend">status = done</div></div>
+            <div class="stat-card"><div class="label">فاشلة</div><div class="value" id="stat-failed">—</div><div class="trend">status = failed</div></div>
+          </div>
+          <div class="card">
+            <h3>أحدث طلبات الترجمة</h3>
+            <div id="dashboard-jobs-table"><div class="skeleton" style="height:160px;"></div></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-translations">
+          <div class="tabs" data-group="translations">
+            <button class="tab-btn active" data-tab="trans-upload">رفع ملف للترجمة</button>
+            <button class="tab-btn" data-tab="trans-track">تتبع حالة الترجمة</button>
+            <button class="tab-btn" data-tab="trans-all">كل الطلبات</button>
+          </div>
+
+          <div class="tab-panel active" id="trans-upload">
+            <div class="card">
+              <h3>طلب ترجمة جديد</h3>
+              <div class="alert info show" style="margin-bottom:18px;">
+                الـ API الحقيقي يستقبل <strong>رابط ملف مرفوع مسبقاً</strong> على WordPress Media Library — اختر ملفاً من جهازك
+                وسنحاول رفعه تلقائياً لو ضبطت بيانات WordPress في ⚙️، وإلا سيتم تشغيل محاكاة Demo فقط (بدون ترجمة حقيقية).
+              </div>
+              <div class="alert" id="upload-alert"></div>
+              <form id="upload-form" class="form-grid">
+                <div class="form-field full">
+                  <label>اختر ملفاً من جهازك</label>
+                  <input type="file" id="f-file-picker">
+                  <div class="hint">أو الصق رابط ملف موجود مسبقاً تحت بالحقل التالي بدلاً من رفع ملف جديد.</div>
+                </div>
+                <div class="form-field full">
+                  <label>رابط الملف المصدر (source_file_url)</label>
+                  <input type="url" id="f-source-url" placeholder="https://moajamalmaani.com/wp-content/uploads/file.pdf">
+                </div>
+                <div class="form-field">
+                  <label>اسم الملف (source_filename) *</label>
+                  <input type="text" id="f-source-filename" placeholder="contract.pdf" required>
+                </div>
+                <div class="form-field"><label>اللغة المصدر</label><input type="text" id="f-source-lang" value="auto-detect"></div>
+                <div class="form-field"><label>اللغة الهدف</label><input type="text" id="f-target-lang" value="Arabic"></div>
+                <div class="form-field"><label>التخصص القانوني (اختياري)</label><input type="text" id="f-legal-domain"></div>
+                <div class="form-field"><label>بريد العميل (اختياري)</label><input type="email" id="f-client-email"></div>
+                <div class="form-field"><label>اسم العميل (اختياري)</label><input type="text" id="f-client-name"></div>
+                <div class="form-field"><label>هاتف العميل (اختياري)</label><input type="text" id="f-client-phone"></div>
+                <div class="full" style="display:flex;gap:10px;align-items:center;">
+                  <button type="submit" class="btn" id="upload-submit-btn">إرسال للترجمة</button>
+                  <span class="hint">يتطلب X-API-Key — اضبطه من ⚙️</span>
+                </div>
+              </form>
+              <div id="upload-progress" style="display:none;margin-top:18px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;"><span id="progress-label">جارٍ المعالجة...</span><span id="progress-pct">0%</span></div>
+                <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="trans-track">
+            <div class="card">
+              <h3>تتبع حالة طلب ترجمة</h3>
+              <div class="alert" id="track-alert"></div>
+              <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+                <input type="text" id="track-job-id" placeholder="job_id" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;">
+                <button class="btn" id="track-btn">تتبع</button>
+              </div>
+              <div id="track-result"></div>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="trans-all">
+            <div class="card">
+              <div class="toolbar">
+                <input type="search" id="trans-search" placeholder="بحث باسم الملف أو العميل...">
+                <div class="filters">
+                  <select id="trans-status-filter">
+                    <option value="">كل الحالات</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="done">Done</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                  <button class="btn outline sm" id="trans-reload-btn">تحديث</button>
+                </div>
+              </div>
+              <div id="translations-table"><div class="skeleton" style="height:200px;"></div></div>
+              <div class="pager" id="translations-pager" style="display:flex;gap:6px;justify-content:center;margin-top:16px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-clients">
+          <div class="tabs" data-group="clients">
+            <button class="tab-btn active" data-tab="clients-all">All Clients</button>
+            <button class="tab-btn" data-tab="clients-add">Add New</button>
+            <button class="tab-btn" data-tab="clients-reports">Reports</button>
+          </div>
+          <div class="tab-panel active" id="clients-all">
+            <div class="card">
+              <div class="alert" id="clients-alert"></div>
+              <div class="toolbar"><input type="search" id="clients-search" placeholder="ابحث عن عميل..."><button class="btn outline sm" id="clients-reload-btn">تحديث</button></div>
+              <div id="clients-table"><div class="skeleton" style="height:180px;"></div></div>
+            </div>
+          </div>
+          <div class="tab-panel" id="clients-add">
+            <div class="card">
+              <h3>إضافة عميل جديد</h3>
+              <div class="alert" id="add-client-alert"></div>
+              <form id="add-client-form" class="form-grid">
+                <div class="form-field"><label>اسم العميل *</label><input type="text" id="nc-name" required></div>
+                <div class="form-field"><label>البريد الإلكتروني *</label><input type="email" id="nc-email" required></div>
+                <div class="form-field"><label>رقم الهاتف</label><input type="text" id="nc-phone"></div>
+                <div class="form-field"><label>العنوان</label><input type="text" id="nc-address"></div>
+                <div class="form-field full"><label>ملاحظات</label><textarea id="nc-notes"></textarea></div>
+                <div class="full" style="display:flex;gap:10px;">
+                  <button type="submit" class="btn" id="add-client-btn">حفظ العميل</button>
+                  <button type="reset" class="btn outline">تفريغ النموذج</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div class="tab-panel" id="clients-reports">
+            <div class="card"><h3>تقارير العملاء</h3><div class="placeholder-report"><div class="big">📈</div><p>لا يوفر الـ API endpoint مخصص لتقارير العملاء حالياً.</p></div></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-invoicing">
+          <div class="tabs" data-group="invoicing">
+            <button class="tab-btn active" data-tab="inv-recent">Recent</button>
+            <button class="tab-btn" data-tab="inv-pending">Pending</button>
+            <button class="tab-btn" data-tab="inv-paid">Paid</button>
+            <button class="tab-btn" data-tab="inv-reports">Reports</button>
+          </div>
+          <div class="tab-panel active" id="inv-recent">
+            <div class="card">
+              <div class="alert" id="invoices-alert"></div>
+              <div class="toolbar"><input type="search" id="inv-search" placeholder="بحث برقم الفاتورة..."><button class="btn outline sm" id="invoices-reload-btn">تحديث</button></div>
+              <div id="invoices-table"><div class="skeleton" style="height:180px;"></div></div>
+            </div>
+          </div>
+          <div class="tab-panel" id="inv-pending"><div class="card"><div id="invoices-pending-table"></div></div></div>
+          <div class="tab-panel" id="inv-paid"><div class="card"><div id="invoices-paid-table"></div></div></div>
+          <div class="tab-panel" id="inv-reports"><div class="card"><h3>تقارير الفواتير</h3><div class="placeholder-report"><div class="big">🧾</div><p>تقارير مالية شاملة متاحة في ERP &amp; Accounting.</p></div></div></div>
+        </section>
+
+        <section class="page" id="page-erp">
+          <div class="tabs" data-group="erp">
+            <button class="tab-btn active" data-tab="erp-coa">Chart of Accounts</button>
+            <button class="tab-btn" data-tab="erp-journal">Journal</button>
+            <button class="tab-btn" data-tab="erp-reports">Reports</button>
+          </div>
+          <div class="tab-panel active" id="erp-coa">
+            <div class="card">
+              <div class="alert" id="accounts-alert"></div>
+              <div class="toolbar"><input type="search" id="accounts-search" placeholder="ابحث عن حساب..."><button class="btn outline sm" id="accounts-reload-btn">تحديث</button></div>
+              <div id="accounts-table"><div class="skeleton" style="height:180px;"></div></div>
+            </div>
+          </div>
+          <div class="tab-panel" id="erp-journal"><div class="card"><h3>قيود اليومية</h3><div class="placeholder-report"><div class="big">📒</div><p>يتطلب Bearer Token صالح في ⚙️ الإعدادات.</p></div></div></div>
+          <div class="tab-panel" id="erp-reports"><div class="card"><h3>التقارير المالية</h3><div class="placeholder-report"><div class="big">📑</div><p>Profit &amp; Loss و Balance Sheet تتطلب Bearer Token صالح.</p></div></div></div>
+        </section>
+
+        <section class="page" id="page-knowledge">
+          <div class="tabs" data-group="knowledge">
+            <button class="tab-btn active" data-tab="kb-upload">إضافة معرفة</button>
+            <button class="tab-btn" data-tab="kb-files">الملفات المضافة</button>
+          </div>
+
+          <div class="tab-panel active" id="kb-upload">
+            <div class="card">
+              <h3>رفع ملف لقاعدة المعرفة</h3>
+              <div class="alert info show" style="margin-bottom:18px;">
+                ارفع ملفاً (PDF / DOCX / TXT) إلى قاعدة المعرفة على الخادم. سيتم تقطيعه إلى chunks
+                واستخدامه كمرجع أثناء الترجمة. اختر الـ Collection المناسبة للمحتوى.
+              </div>
+              <div class="alert" id="kb-upload-alert"></div>
+              <form id="kb-upload-form" class="form-grid">
+                <div class="form-field full">
+                  <label>اختر ملفاً (PDF / DOCX / TXT) *</label>
+                  <input type="file" id="kb-file-picker" accept=".pdf,.docx,.txt" required>
+                </div>
+                <div class="form-field full">
+                  <label>Collection *</label>
+                  <select id="kb-collection" required>
+                    <option value="A_Banking">A_Banking</option>
+                    <option value="B_Shipping">B_Shipping</option>
+                    <option value="C_Corporate">C_Corporate</option>
+                    <option value="D_POA">D_POA</option>
+                    <option value="E_Government">E_Government</option>
+                    <option value="F_Tenancy">F_Tenancy</option>
+                    <option value="G_Correspondence">G_Correspondence</option>
+                    <option value="H_Medical">H_Medical</option>
+                    <option value="I_Internal">I_Internal</option>
+                    <option value="GLOBAL">GLOBAL</option>
+                  </select>
+                </div>
+                <div class="full" style="display:flex;gap:10px;align-items:center;">
+                  <button type="submit" class="btn" id="kb-upload-btn">رفع الملف</button>
+                  <span class="hint">يتطلب X-API-Key — اضبطه من ⚙️</span>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="kb-files">
+            <div class="card">
+              <div class="alert" id="kb-files-alert"></div>
+              <div class="toolbar">
+                <input type="search" id="kb-search" placeholder="ابحث عن ملف...">
+                <button class="btn outline sm" id="kb-reload-btn">تحديث</button>
+              </div>
+              <div id="kb-files-table"><div class="skeleton" style="height:180px;"></div></div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const CONFIG = { BASE_URL: 'https://moajam-api.onrender.com' };
+  const EP = {
+    clients: '/api/v1/clients',
+    invoices: '/api/v1/invoices',
+    accounts: '/api/v1/accounting/accounts',
+    translations: '/api/v1/translations',
+    translationJob: (id) => '/api/v1/translations/' + encodeURIComponent(id),
+    translationRetry: (id) => '/api/v1/translations/' + encodeURIComponent(id) + '/retry',
+    knowledgeUpload: '/api/v1/knowledge/upload',
+    knowledgeFiles: '/api/v1/knowledge/files',
+    knowledgeFile: (filename) => '/api/v1/knowledge/files/' + encodeURIComponent(filename)
+  };
+
+  const state = {
+    baseUrl: localStorage.getItem('moajam_base_url') || CONFIG.BASE_URL,
+    apiKey: localStorage.getItem('moajam_api_key') || '',
+    bearerToken: localStorage.getItem('moajam_bearer_token') || '',
+    wpUrl: localStorage.getItem('moajam_wp_url') || '',
+    wpUser: localStorage.getItem('moajam_wp_user') || '',
+    wpAppPassword: localStorage.getItem('moajam_wp_app_password') || '',
+    clients: [], invoices: [], accounts: [], translations: [], knowledgeFiles: [],
+    pickedFile: null
+  };
+
+  function toast(message, type){
+    type = type || 'info';
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = message;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+  function showAlert(id, message, type){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = 'alert show ' + (type || 'error');
+    el.textContent = message;
+  }
+  function clearAlert(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = 'alert';
+    el.textContent = '';
+  }
+  function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmtDate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleString('ar-EG'); }catch(e){ return s; } }
+  function statusBadge(status){
+    const map = { pending:'warning', processing:'info', done:'success', failed:'danger', draft:'muted', sent:'info', paid:'success', overdue:'danger', cancelled:'muted' };
+    return '<span class="badge ' + (map[status] || 'muted') + '">' + escapeHtml(status) + '</span>';
+  }
+  function formEncode(obj){
+    const params = new URLSearchParams();
+    Object.keys(obj).forEach(k => { if(obj[k] !== undefined && obj[k] !== null && obj[k] !== '') params.append(k, obj[k]); });
+    return params;
+  }
+
+  /* Generic fetch wrapper: classifies errors into network/timeout/auth/forbidden/notfound/validation/server.
+     A real backend CORS misconfiguration cannot be fixed from this file — only the backend's
+     Access-Control-Allow-Origin headers can fix that. */
+  async function apiFetch(path, opts){
+    opts = opts || {};
+    const headers = Object.assign({}, opts.headers || {});
+    if(opts.auth){
+      if(!state.bearerToken) return { ok:false, kind:'config', status:0, message:'Bearer Token غير مضبوط. افتح ⚙️ وأدخله.' };
+      headers['Authorization'] = 'Bearer ' + state.bearerToken;
+    }
+    if(opts.apiKey){
+      if(!state.apiKey) return { ok:false, kind:'config', status:0, message:'X-API-Key غير مضبوط. افتح ⚙️ وأدخله.' };
+      headers['X-API-Key'] = state.apiKey;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), opts.timeoutMs || 45000);
+    let res;
+    try{
+      res = await fetch(state.baseUrl.replace(/\/+$/, '') + path, { method: opts.method || 'GET', headers, body: opts.body, signal: controller.signal });
+    }catch(err){
+      clearTimeout(timer);
+      if(err.name === 'AbortError') return { ok:false, kind:'timeout', status:0, message:'انتهت مهلة الاتصال (الخادم قد يكون نائماً - Render free tier). حاول مرة أخرى.' };
+      return { ok:false, kind:'network', status:0, message:'تعذر الوصول إلى الخادم (شبكة أو CORS). إصلاح CORS الحقيقي يتم من إعدادات الخادم لا من هذا الملف.' };
+    }
+    clearTimeout(timer);
+    let data = null;
+    const text = await res.text();
+    if(text){ try{ data = JSON.parse(text); }catch(e){ data = text; } }
+    if(res.ok) return { ok:true, status:res.status, data };
+    if(res.status === 401) return { ok:false, kind:'auth', status:401, data, message:'غير مصرح (401) — تأكد من صحة Bearer Token / X-API-Key في ⚙️.' };
+    if(res.status === 403) return { ok:false, kind:'forbidden', status:403, data, message:'ممنوع الوصول (403).' };
+    if(res.status === 404) return { ok:false, kind:'notfound', status:404, data, message:'غير موجود (404).' };
+    if(res.status === 422){
+      let detail = 'بيانات غير صحيحة.';
+      if(data && Array.isArray(data.detail)) detail = data.detail.map(d => (Array.isArray(d.loc)?d.loc.join('.'):'') + ': ' + d.msg).join(' | ');
+      return { ok:false, kind:'validation', status:422, data, message:'خطأ بيانات (422): ' + detail };
+    }
+    if(res.status >= 500) return { ok:false, kind:'server', status:res.status, data, message:'خطأ خادم (HTTP ' + res.status + '). حاول لاحقاً.' };
+    return { ok:false, kind:'unknown', status:res.status, data, message:'خطأ غير متوقع (HTTP ' + res.status + ').' };
+  }
+
+  /* ---------- Login: cosmetic only, accepts anything ---------- */
+  document.getElementById('login-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    const user = document.getElementById('login-user').value.trim();
+    const pass = document.getElementById('login-pass').value.trim();
+    if(!user || !pass){
+      document.getElementById('login-msg').textContent = 'أدخل أي اسم مستخدم وكلمة مرور.';
+      return;
+    }
+    enterApp(user);
+  });
+
+  function enterApp(username){
+    document.getElementById('current-user').textContent = username;
+    document.getElementById('topbar-user').textContent = username;
+    document.getElementById('avatar-letter').textContent = username.charAt(0).toUpperCase();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('settings-base-url').value = state.baseUrl;
+    document.getElementById('settings-api-key').value = state.apiKey;
+    document.getElementById('settings-bearer-token').value = state.bearerToken;
+    document.getElementById('settings-wp-url').value = state.wpUrl;
+    document.getElementById('settings-wp-user').value = state.wpUser;
+    document.getElementById('settings-wp-app-password').value = state.wpAppPassword;
+    loadDashboard();
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', function(){
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-form').reset();
+    document.getElementById('login-msg').textContent = '';
+  });
+
+  function showDemoBanner(text){
+    const b = document.getElementById('demo-banner');
+    document.getElementById('demo-banner-text').textContent = text || '⚠️ وضع تجريبي — البيانات المعروضة Demo.';
+    b.classList.add('show');
+  }
+  function hideDemoBanner(){ document.getElementById('demo-banner').classList.remove('show'); }
+
+  const settingsModal = document.getElementById('settings-modal');
+  function openSettings(){ settingsModal.classList.add('show'); }
+  document.getElementById('open-settings-btn').addEventListener('click', openSettings);
+  document.getElementById('open-settings-from-banner').addEventListener('click', openSettings);
+  document.getElementById('settings-cancel').addEventListener('click', () => settingsModal.classList.remove('show'));
+  document.getElementById('settings-save').addEventListener('click', function(){
+    state.baseUrl = document.getElementById('settings-base-url').value.trim() || CONFIG.BASE_URL;
+    state.apiKey = document.getElementById('settings-api-key').value.trim();
+    state.bearerToken = document.getElementById('settings-bearer-token').value.trim();
+    state.wpUrl = document.getElementById('settings-wp-url').value.trim();
+    state.wpUser = document.getElementById('settings-wp-user').value.trim();
+    state.wpAppPassword = document.getElementById('settings-wp-app-password').value.trim();
+    localStorage.setItem('moajam_base_url', state.baseUrl);
+    localStorage.setItem('moajam_api_key', state.apiKey);
+    localStorage.setItem('moajam_bearer_token', state.bearerToken);
+    localStorage.setItem('moajam_wp_url', state.wpUrl);
+    localStorage.setItem('moajam_wp_user', state.wpUser);
+    localStorage.setItem('moajam_wp_app_password', state.wpAppPassword);
+    settingsModal.classList.remove('show');
+    toast('تم حفظ الإعدادات محلياً في متصفحك.', 'success');
+    loadCurrentPageData();
+  });
+
+  const navButtons = document.querySelectorAll('.nav-btn');
+  const pages = document.querySelectorAll('.page');
+  const pageTitle = document.getElementById('page-title');
+  const titles = { dashboard:'Dashboard', translations:'Translations', clients:'Clients Management', invoicing:'Invoicing System', erp:'ERP & Accounting', knowledge:'Knowledge Base' };
+  navButtons.forEach(btn => btn.addEventListener('click', function(){
+    navButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.getAttribute('data-page');
+    pages.forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + target).classList.add('active');
+    pageTitle.textContent = titles[target];
+    if(window.innerWidth <= 768){ sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+    loadCurrentPageData();
+  }));
+  function currentPage(){ const a = document.querySelector('.nav-btn.active'); return a ? a.getAttribute('data-page') : 'dashboard'; }
+  function loadCurrentPageData(){
+    const p = currentPage();
+    if(p === 'dashboard') loadDashboard();
+    if(p === 'translations') loadTranslations();
+    if(p === 'clients') loadClients();
+    if(p === 'invoicing') loadInvoices();
+    if(p === 'erp') loadAccounts();
+    if(p === 'knowledge') loadKnowledge();
+  }
+  document.getElementById('refresh-btn').addEventListener('click', loadCurrentPageData);
+
+  document.querySelectorAll('.tabs').forEach(function(tabGroup){
+    const buttons = tabGroup.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.addEventListener('click', function(){
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const targetId = btn.getAttribute('data-tab');
+      tabGroup.parentElement.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+    }));
+  });
+
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  document.getElementById('menu-toggle').addEventListener('click', () => {
+    sidebar.classList.contains('open') ? (sidebar.classList.remove('open'), overlay.classList.remove('show')) : (sidebar.classList.add('open'), overlay.classList.add('show'));
+  });
+  overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
+
+  /* ---------- Dashboard ---------- */
+  async function loadDashboard(){
+    clearAlert('dashboard-alert');
+    if(!state.apiKey){ showAlert('dashboard-alert', 'X-API-Key غير مضبوط — يتم عرض بيانات Demo.', 'info'); renderDemoDashboard(); showDemoBanner(); return; }
+    const result = await apiFetch(EP.translations, { apiKey:true });
+    if(!result.ok){
+      showAlert('dashboard-alert', result.message, 'error');
+      renderDemoDashboard();
+      showDemoBanner('⚠️ تعذر جلب بيانات حقيقية (' + result.message + ') — البيانات المعروضة Demo.');
+      return;
+    }
+    hideDemoBanner();
+    const jobs = result.data || [];
+    state.translations = jobs;
+    renderStats(jobs);
+    renderDashboardJobsTable(jobs.slice(0,8));
+  }
+  function renderStats(jobs){
+    document.getElementById('stat-total').textContent = jobs.length;
+    document.getElementById('stat-processing').textContent = jobs.filter(j => j.status==='pending'||j.status==='processing').length;
+    document.getElementById('stat-done').textContent = jobs.filter(j => j.status==='done').length;
+    document.getElementById('stat-failed').textContent = jobs.filter(j => j.status==='failed').length;
+  }
+  function renderDashboardJobsTable(jobs){
+    const el = document.getElementById('dashboard-jobs-table');
+    if(!jobs.length){ el.innerHTML = '<p style="color:var(--text-muted);">لا توجد طلبات ترجمة بعد.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>الملف</th><th>العميل</th><th>اللغة الهدف</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>' +
+      jobs.map(j => '<tr><td>'+escapeHtml(j.source_filename)+'</td><td>'+escapeHtml(j.client_name||'—')+'</td><td>'+escapeHtml(j.target_language)+'</td><td>'+fmtDate(j.created_at)+'</td><td>'+statusBadge(j.status)+'</td></tr>').join('') +
+      '</tbody></table>';
+  }
+  function renderDemoDashboard(){
+    const demoJobs = [
+      { source_filename:'contract-demo.pdf', client_name:'عميل تجريبي', target_language:'Arabic', created_at:new Date().toISOString(), status:'done' },
+      { source_filename:'agreement-demo.docx', client_name:'عميل تجريبي 2', target_language:'English', created_at:new Date().toISOString(), status:'processing' }
+    ];
+    renderStats(demoJobs);
+    renderDashboardJobsTable(demoJobs);
+  }
+
+  /* ---------- File picker -> base64 (optional real WP upload) ---------- */
+  document.getElementById('f-file-picker').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    state.pickedFile = file;
+    document.getElementById('f-source-filename').value = file.name;
+    document.getElementById('f-source-url').value = '';
+    toast('تم اختيار الملف: ' + file.name + ' — سيتم رفعه عند الإرسال.', 'info');
+  });
+
+  async function uploadFileToWordPress(file){
+    // Relay through the backend (/api/v1/translations/upload) so the WordPress
+    // Application Password stays server-side and never touches the browser.
+    if(!state.apiKey){
+      return { ok:false, demo:true };
+    }
+    const fd = new FormData();
+    fd.append('file', file);
+    const up = await apiFetch('/api/v1/translations/upload', { method:'POST', apiKey:true, body: fd });
+    if(!up.ok){
+      return { ok:false, demo:false, message: up.message };
+    }
+    return { ok:true, url: up.data.url };
+  }
+
+  document.getElementById('upload-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    clearAlert('upload-alert');
+    const btn = document.getElementById('upload-submit-btn');
+    const progress = document.getElementById('upload-progress');
+    const bar = document.getElementById('progress-bar');
+    const pct = document.getElementById('progress-pct');
+    const label = document.getElementById('progress-label');
+
+    let sourceUrl = document.getElementById('f-source-url').value.trim();
+    const filename = document.getElementById('f-source-filename').value.trim();
+    let demoSimulated = false;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> جاري المعالجة...';
+    progress.style.display = 'block';
+    bar.style.width = '5%'; pct.textContent = '5%';
+
+    if(!sourceUrl && state.pickedFile){
+      label.textContent = 'جارٍ رفع الملف...';
+      bar.style.width = '20%'; pct.textContent = '20%';
+      const up = await uploadFileToWordPress(state.pickedFile);
+      if(up.ok){
+        sourceUrl = up.url;
+      }else if(up.demo){
+        demoSimulated = true;
+        sourceUrl = 'demo://local-file/' + encodeURIComponent(filename);
+      }else{
+        btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+        progress.style.display = 'none';
+        showAlert('upload-alert', up.message, 'error');
+        return;
+      }
+    }
+
+    if(!sourceUrl){
+      btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+      progress.style.display = 'none';
+      showAlert('upload-alert', 'اختر ملفاً أو أدخل رابط ملف.', 'error');
+      return;
+    }
+
+    if(demoSimulated){
+      bar.style.width = '60%'; pct.textContent = '60%'; label.textContent = 'محاكاة Demo (لا رفع حقيقي WordPress)...';
+      await new Promise(r => setTimeout(r, 900));
+      bar.style.width = '100%'; pct.textContent = '100%';
+      const fakeId = 'demo-job-' + Date.now();
+      btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+      showAlert('upload-alert', 'تم محاكاة الإرسال فقط (Demo) — لم تتم ترجمة حقيقية لأن بيانات WordPress غير مضبوطة في ⚙️. job_id تجريبي: ' + fakeId, 'info');
+      document.getElementById('track-job-id').value = fakeId;
+      setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 1500);
+      return;
+    }
+
+    label.textContent = 'جارٍ إنشاء طلب الترجمة...';
+    bar.style.width = '75%'; pct.textContent = '75%';
+
+    const payload = {
+      source_file_url: sourceUrl,
+      source_filename: filename,
+      source_language: document.getElementById('f-source-lang').value.trim() || 'auto-detect',
+      target_language: document.getElementById('f-target-lang').value.trim() || 'Arabic',
+      legal_domain: document.getElementById('f-legal-domain').value.trim(),
+      client_email: document.getElementById('f-client-email').value.trim(),
+      client_name: document.getElementById('f-client-name').value.trim(),
+      client_phone: document.getElementById('f-client-phone').value.trim()
+    };
+
+    const result = await apiFetch(EP.translations, { method:'POST', apiKey:true, headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formEncode(payload) });
+    btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+
+    if(!result.ok){
+      progress.style.display = 'none';
+      showAlert('upload-alert', result.message, result.kind === 'config' ? 'info' : 'error');
+      return;
+    }
+    bar.style.width = '100%'; pct.textContent = '100%';
+    showAlert('upload-alert', 'تم إنشاء طلب ترجمة حقيقي بنجاح. job_id: ' + result.data.job_id + ' — الحالة: ' + result.data.status, 'success');
+    toast('تم إرسال الملف للترجمة', 'success');
+    document.getElementById('track-job-id').value = result.data.job_id;
+    setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 1500);
+  });
+
+  document.getElementById('track-btn').addEventListener('click', trackTranslation);
+  async function trackTranslation(){
+    clearAlert('track-alert');
+    const jobId = document.getElementById('track-job-id').value.trim();
+    const resultEl = document.getElementById('track-result');
+    if(!jobId){ showAlert('track-alert', 'أدخل job_id أولاً.'); return; }
+    if(jobId.startsWith('demo-job-')){
+      resultEl.innerHTML = '<div class="card" style="margin:0;"><p><strong>هذا job_id تجريبي (Demo)</strong> — تم إنشاؤه محلياً فقط ولا يوجد له سجل حقيقي على الخادم.</p></div>';
+      return;
+    }
+    resultEl.innerHTML = '<div class="skeleton" style="height:80px;"></div>';
+    const result = await apiFetch(EP.translationJob(jobId), { apiKey:true });
+    if(!result.ok){ resultEl.innerHTML = ''; showAlert('track-alert', result.message, result.kind === 'config' ? 'info' : 'error'); return; }
+    const job = result.data;
+    const progressPct = { pending:15, processing:60, done:100, failed:100 }[job.status] || 0;
+    const downloadBtn = job.status === 'done' ? '<button class="btn sm" onclick="window.__downloadTranslation(\''+encodeURIComponent(job.output_url||'')+'\')">تحميل الملف المترجم</button>' : '';
+    resultEl.innerHTML = '<div class="card" style="margin:0;">' +
+      '<p><strong>الملف:</strong> '+escapeHtml(job.source_filename)+'</p>' +
+      '<p><strong>الحالة:</strong> '+statusBadge(job.status)+(job.error_message?' — '+escapeHtml(job.error_message):'')+'</p>' +
+      '<div class="progress-wrap"><div class="progress-bar" style="width:'+progressPct+'%"></div></div>' +
+      '<p style="margin-top:14px;"><strong>تاريخ الإنشاء:</strong> '+fmtDate(job.created_at)+'</p>' +
+      (downloadBtn?'<div style="margin-top:10px;">'+downloadBtn+'</div>':'') + '</div>';
+  }
+  // output_url is already a public WordPress media URL - open it directly.
+  // The backend /download endpoint 302-redirects cross-origin, which fetch
+  // cannot follow under CORS.
+  window.__downloadTranslation = function(encodedUrl){
+    const url = decodeURIComponent(encodedUrl || '');
+    if(url) window.open(url, '_blank'); else toast('الملف غير جاهز للتحميل بعد.', 'info');
+  };
+
+  async function loadTranslations(){
+    const el = document.getElementById('translations-table');
+    if(!state.apiKey){ renderTranslationsTable(demoTranslations()); showDemoBanner(); return; }
+    const result = await apiFetch(EP.translations, { apiKey:true });
+    if(!result.ok){ el.innerHTML = '<p style="color:var(--text-muted);">'+escapeHtml(result.message)+'</p>'; renderTranslationsTable(demoTranslations()); showDemoBanner('⚠️ '+result.message+' — البيانات المعروضة Demo.'); return; }
+    hideDemoBanner();
+    state.translations = result.data || [];
+    renderTranslationsTable(state.translations);
+  }
+  function demoTranslations(){
+    return [{ id:'demo-1', source_filename:'demo-contract.pdf', client_name:'عميل تجريبي', status:'done', target_language:'Arabic', created_at:new Date().toISOString() }];
+  }
+  function renderTranslationsTable(list){
+    const q = document.getElementById('trans-search').value.trim().toLowerCase();
+    const status = document.getElementById('trans-status-filter').value;
+    const filtered = list.filter(j => (!q || (j.source_filename||'').toLowerCase().includes(q) || (j.client_name||'').toLowerCase().includes(q)) && (!status || j.status === status));
+    const el = document.getElementById('translations-table');
+    if(!filtered.length){ el.innerHTML = '<p style="color:var(--text-muted);">لا توجد نتائج.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>Job ID</th><th>الملف</th><th>العميل</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>' +
+      filtered.map(j => {
+        const retryBtn = j.status === 'failed'
+          ? ' <button class="btn sm" onclick="window.__retryTranslation(\''+encodeURIComponent(j.id)+'\')">إعادة المحاولة</button>'
+          : '';
+        return '<tr><td>'+escapeHtml(j.id)+'</td><td>'+escapeHtml(j.source_filename)+'</td><td>'+escapeHtml(j.client_name||'—')+'</td><td>'+statusBadge(j.status)+'</td><td>'+fmtDate(j.created_at)+
+          '</td><td style="white-space:nowrap;"><button class="btn sm outline" onclick="document.getElementById(\'track-job-id\').value=\''+j.id+'\';document.querySelector(\'[data-tab=trans-track]\').click()">تتبع</button>'+retryBtn+'</td></tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+  // Re-queue a failed job via POST /api/v1/translations/{id}/retry.
+  window.__retryTranslation = async function(encodedId){
+    const id = decodeURIComponent(encodedId || '');
+    if(!id) return;
+    if(!state.apiKey){ toast('X-API-Key غير مضبوط — افتح ⚙️ وأدخله.', 'error'); return; }
+    const result = await apiFetch(EP.translationRetry(id), { method:'POST', apiKey:true });
+    if(!result.ok){ toast(result.message, 'error'); return; }
+    toast('تمت إعادة جدولة الطلب — الحالة: ' + ((result.data && result.data.status) || 'pending'), 'success');
+    loadTranslations();
+  };
+  document.getElementById('trans-search').addEventListener('input', () => renderTranslationsTable(state.translations.length ? state.translations : demoTranslations()));
+  document.getElementById('trans-status-filter').addEventListener('change', () => renderTranslationsTable(state.translations.length ? state.translations : demoTranslations()));
+  document.getElementById('trans-reload-btn').addEventListener('click', loadTranslations);
+
+  /* ---------- Clients ---------- */
+  async function loadClients(){
+    clearAlert('clients-alert');
+    const el = document.getElementById('clients-table');
+    if(!state.bearerToken){ showAlert('clients-alert', 'Bearer Token غير مضبوط — يتم عرض بيانات Demo.', 'info'); renderClientsTable(demoClients()); showDemoBanner(); return; }
+    const result = await apiFetch(EP.clients, { auth:true });
+    if(!result.ok){ el.innerHTML=''; showAlert('clients-alert', result.message); renderClientsTable(demoClients()); showDemoBanner('⚠️ '+result.message+' — البيانات المعروضة Demo.'); return; }
+    hideDemoBanner();
+    state.clients = result.data || [];
+    renderClientsTable(state.clients);
+  }
+  function demoClients(){ return [{ id:1, name:'عميل تجريبي', email:'demo@example.com', phone:'—', created_at:new Date().toISOString() }]; }
+  function renderClientsTable(list){
+    const q = document.getElementById('clients-search').value.trim().toLowerCase();
+    const filtered = list.filter(c => !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q));
+    const el = document.getElementById('clients-table');
+    el.innerHTML = filtered.length ? '<table><thead><tr><th>الاسم</th><th>البريد الإلكتروني</th><th>الهاتف</th><th>تاريخ الإضافة</th></tr></thead><tbody>' +
+      filtered.map(c => '<tr><td>'+escapeHtml(c.name)+'</td><td>'+escapeHtml(c.email)+'</td><td>'+escapeHtml(c.phone||'—')+'</td><td>'+fmtDate(c.created_at)+'</td></tr>').join('') + '</tbody></table>'
+      : '<p style="color:var(--text-muted);">لا يوجد عملاء.</p>';
+  }
+  document.getElementById('clients-search').addEventListener('input', () => renderClientsTable(state.clients.length ? state.clients : demoClients()));
+  document.getElementById('clients-reload-btn').addEventListener('click', loadClients);
+
+  document.getElementById('add-client-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    clearAlert('add-client-alert');
+    const btn = document.getElementById('add-client-btn');
+    const payload = {
+      name: document.getElementById('nc-name').value.trim(),
+      email: document.getElementById('nc-email').value.trim(),
+      phone: document.getElementById('nc-phone').value.trim() || null,
+      address: document.getElementById('nc-address').value.trim() || null,
+      notes: document.getElementById('nc-notes').value.trim() || null
+    };
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> جاري الحفظ...';
+    if(!state.bearerToken){
+      btn.disabled = false; btn.textContent = 'حفظ العميل';
+      showAlert('add-client-alert', 'تم الحفظ محلياً فقط (Demo) — Bearer Token غير مضبوط، لن يُحفظ في الخادم الحقيقي.', 'info');
+      return;
+    }
+    const result = await apiFetch(EP.clients, { method:'POST', auth:true, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    btn.disabled = false; btn.textContent = 'حفظ العميل';
+    if(!result.ok){ showAlert('add-client-alert', result.message); return; }
+    showAlert('add-client-alert', 'تم إضافة العميل بنجاح.', 'success');
+    toast('تم إضافة العميل', 'success');
+    document.getElementById('add-client-form').reset();
+    loadClients();
+  });
+
+  /* ---------- Invoices ---------- */
+  async function loadInvoices(){
+    clearAlert('invoices-alert');
+    const el = document.getElementById('invoices-table');
+    if(!state.bearerToken){ showAlert('invoices-alert', 'Bearer Token غير مضبوط — يتم عرض بيانات Demo.', 'info'); renderInvoicesTable(demoInvoices()); showDemoBanner(); return; }
+    const result = await apiFetch(EP.invoices, { auth:true });
+    if(!result.ok){ el.innerHTML=''; showAlert('invoices-alert', result.message); renderInvoicesTable(demoInvoices()); showDemoBanner('⚠️ '+result.message+' — البيانات المعروضة Demo.'); return; }
+    hideDemoBanner();
+    state.invoices = result.data || [];
+    renderInvoicesTable(state.invoices);
+  }
+  function demoInvoices(){ return [{ id:1, number:'INV-DEMO-1', client_id:1, status:'paid', total:1000, currency:'EGP', issue_date:new Date().toISOString().slice(0,10) }]; }
+  function invoiceRowsHtml(list){
+    return list.map(i => '<tr><td>'+escapeHtml(i.number)+'</td><td>#'+i.client_id+'</td><td>'+i.total+' '+escapeHtml(i.currency)+'</td><td>'+i.issue_date+'</td><td>'+statusBadge(i.status)+'</td></tr>').join('');
+  }
+  function renderInvoicesTable(list){
+    const q = document.getElementById('inv-search').value.trim().toLowerCase();
+    const filtered = list.filter(i => !q || i.number.toLowerCase().includes(q));
+    document.getElementById('invoices-table').innerHTML = filtered.length
+      ? '<table><thead><tr><th>رقم الفاتورة</th><th>العميل</th><th>الإجمالي</th><th>تاريخ الإصدار</th><th>الحالة</th></tr></thead><tbody>'+invoiceRowsHtml(filtered)+'</tbody></table>'
+      : '<p style="color:var(--text-muted);">لا توجد فواتير.</p>';
+    document.getElementById('invoices-pending-table').innerHTML = invoiceRowsHtml(list.filter(i => i.status==='sent'||i.status==='overdue')) || '<p style="color:var(--text-muted);">لا توجد فواتير معلقة.</p>';
+    document.getElementById('invoices-paid-table').innerHTML = invoiceRowsHtml(list.filter(i => i.status==='paid')) || '<p style="color:var(--text-muted);">لا توجد فواتير مدفوعة.</p>';
+  }
+  document.getElementById('inv-search').addEventListener('input', () => renderInvoicesTable(state.invoices.length ? state.invoices : demoInvoices()));
+  document.getElementById('invoices-reload-btn').addEventListener('click', loadInvoices);
+
+  /* ---------- Accounting ---------- */
+  async function loadAccounts(){
+    clearAlert('accounts-alert');
+    const el = document.getElementById('accounts-table');
+    if(!state.bearerToken){ showAlert('accounts-alert', 'Bearer Token غير مضبوط — يتم عرض بيانات Demo.', 'info'); renderAccountsTable(demoAccounts()); showDemoBanner(); return; }
+    const result = await apiFetch(EP.accounts, { auth:true });
+    if(!result.ok){ el.innerHTML=''; showAlert('accounts-alert', result.message); renderAccountsTable(demoAccounts()); showDemoBanner('⚠️ '+result.message+' — البيانات المعروضة Demo.'); return; }
+    hideDemoBanner();
+    state.accounts = result.data || [];
+    renderAccountsTable(state.accounts);
+  }
+  function demoAccounts(){ return [{ id:1, code:'1000', name:'النقدية بالخزينة', type:'asset', is_active:true }]; }
+  function renderAccountsTable(list){
+    const q = document.getElementById('accounts-search').value.trim().toLowerCase();
+    const filtered = list.filter(a => !q || a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q));
+    document.getElementById('accounts-table').innerHTML = filtered.length
+      ? '<table><thead><tr><th>رمز الحساب</th><th>اسم الحساب</th><th>النوع</th><th>الحالة</th></tr></thead><tbody>'+
+        filtered.map(a => '<tr><td>'+escapeHtml(a.code)+'</td><td>'+escapeHtml(a.name)+'</td><td>'+escapeHtml(a.type)+'</td><td>'+(a.is_active?'<span class="badge success">نشط</span>':'<span class="badge muted">غير نشط</span>')+'</td></tr>').join('')+'</tbody></table>'
+      : '<p style="color:var(--text-muted);">لا توجد حسابات.</p>';
+  }
+  document.getElementById('accounts-search').addEventListener('input', () => renderAccountsTable(state.accounts.length ? state.accounts : demoAccounts()));
+  document.getElementById('accounts-reload-btn').addEventListener('click', loadAccounts);
+
+  /* ---------- Knowledge Base ---------- */
+  async function loadKnowledge(){
+    clearAlert('kb-files-alert');
+    const el = document.getElementById('kb-files-table');
+    if(!state.apiKey){ showAlert('kb-files-alert', 'X-API-Key غير مضبوط — افتح ⚙️ وأدخله لعرض ملفات قاعدة المعرفة.', 'info'); el.innerHTML = '<p style="color:var(--text-muted);">—</p>'; showDemoBanner(); return; }
+    el.innerHTML = '<div class="skeleton" style="height:180px;"></div>';
+    const result = await apiFetch(EP.knowledgeFiles, { apiKey:true });
+    if(!result.ok){ el.innerHTML = ''; showAlert('kb-files-alert', result.message, result.kind === 'config' ? 'info' : 'error'); return; }
+    hideDemoBanner();
+    // Accept either a bare array or an object like { files: [...] }.
+    const data = result.data;
+    state.knowledgeFiles = Array.isArray(data) ? data : (data && Array.isArray(data.files) ? data.files : []);
+    renderKnowledgeTable(state.knowledgeFiles);
+  }
+  function renderKnowledgeTable(list){
+    const q = document.getElementById('kb-search').value.trim().toLowerCase();
+    // Each item may be a plain filename string or an object with metadata.
+    const rows = list.map(item => (typeof item === 'string') ? { filename:item } : (item || {}));
+    const filtered = rows.filter(r => !q || String(r.filename||'').toLowerCase().includes(q) || String(r.collection||'').toLowerCase().includes(q));
+    const el = document.getElementById('kb-files-table');
+    if(!filtered.length){ el.innerHTML = '<p style="color:var(--text-muted);">لا توجد ملفات في قاعدة المعرفة بعد.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>الملف</th><th>Collection</th><th>Chunks</th><th></th></tr></thead><tbody>' +
+      filtered.map(r => '<tr><td>'+escapeHtml(r.filename)+'</td><td>'+escapeHtml(r.collection||'—')+'</td><td>'+escapeHtml(r.chunks!=null?String(r.chunks):'—')+
+        '</td><td><button class="btn sm" style="background:var(--danger);" onclick="window.__deleteKnowledgeFile(\''+encodeURIComponent(r.filename)+'\')">حذف</button></td></tr>').join('') +
+      '</tbody></table>';
+  }
+  window.__deleteKnowledgeFile = async function(encodedName){
+    const filename = decodeURIComponent(encodedName || '');
+    if(!filename) return;
+    if(!state.apiKey){ toast('X-API-Key غير مضبوط — افتح ⚙️ وأدخله.', 'error'); return; }
+    const result = await apiFetch(EP.knowledgeFile(filename), { method:'DELETE', apiKey:true });
+    if(!result.ok){ toast(result.message, 'error'); return; }
+    toast('تم حذف الملف: ' + filename, 'success');
+    loadKnowledge();
+  };
+  document.getElementById('kb-search').addEventListener('input', () => renderKnowledgeTable(state.knowledgeFiles));
+  document.getElementById('kb-reload-btn').addEventListener('click', loadKnowledge);
+
+  document.getElementById('kb-upload-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    clearAlert('kb-upload-alert');
+    const btn = document.getElementById('kb-upload-btn');
+    const picker = document.getElementById('kb-file-picker');
+    const file = picker.files[0];
+    const collection = document.getElementById('kb-collection').value;
+    if(!file){ showAlert('kb-upload-alert', 'اختر ملفاً أولاً.', 'error'); return; }
+    if(!state.apiKey){ showAlert('kb-upload-alert', 'X-API-Key غير مضبوط — افتح ⚙️ وأدخله.', 'info'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> جاري الرفع...';
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('collection', collection);
+    const result = await apiFetch(EP.knowledgeUpload, { method:'POST', apiKey:true, body: fd, timeoutMs: 120000 });
+    btn.disabled = false; btn.textContent = 'رفع الملف';
+    if(!result.ok){ showAlert('kb-upload-alert', result.message, result.kind === 'config' ? 'info' : 'error'); return; }
+    const chunks = (result.data && (result.data.chunks != null ? result.data.chunks : result.data.chunks_added));
+    showAlert('kb-upload-alert', 'تم إضافة ' + (chunks != null ? chunks : '?') + ' chunks من الملف: ' + file.name, 'success');
+    toast('تم رفع الملف إلى قاعدة المعرفة', 'success');
+    picker.value = '';
+    loadKnowledge();
+  });
+
+})();
+</script>
+</body>
+</html>
