@@ -13,6 +13,37 @@ settings = get_settings()
 
 _client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
+# Knowledge files uploaded to the Anthropic Files API (see
+# scripts/upload_knowledge_to_anthropic.py). translate_text grounds itself in
+# these documents by file_id. Loaded best-effort so a missing/invalid map can
+# never break app import — an empty map just means no documents are attached.
+_FILE_IDS_PATH = os.path.join(
+    os.path.dirname(__file__), "../../knowledge/.anthropic_file_ids.json"
+)
+try:
+    with open(_FILE_IDS_PATH) as _ids_file:
+        ANTHROPIC_FILE_IDS = json.load(_ids_file)
+except Exception:  # noqa: BLE001 - knowledge grounding is best-effort
+    ANTHROPIC_FILE_IDS = {}
+
+COLLECTION_TO_FILE = {
+    "A_Banking_Financial": "A_Banking_Financial.pdf",
+    "B_Shipping_Customs_Logistics": "B_Shipping_Customs_Logistics.pdf",
+    "C_Corporate_Commercial": "C_Corporate_Commercial.pdf",
+    "D_POA_Legal_Instruments": "D_POA_Legal_Instruments.pdf",
+    "E_Government_Personal": "E_Government_Personal.pdf",
+    "F_Tenancy_Real_Estate": "F_Tenancy_Real_Estate.pdf",
+    "G_Correspondence_Evidence": "G_Correspondence_Evidence.pdf",
+    "H_Medical": "H_Medical.pdf",
+    "I_Translator_Affairs_Internal": "I_Translator_Affairs_Internal.pdf",
+}
+
+MASTER_FILES = [
+    "01_ALL_IN_ONE_KNOWLEDGE_MASTER_RULES.txt",
+    "STRICT_MATCHING_DOCUMENT_TYPE_LAYOUT_OVERRIDE.txt",
+    "UAE_Legal_Translation_Requirements_Checklist_3.pdf",
+]
+
 # The raw per-collection knowledge PDFs are 7-100MB each, so we never inline a
 # whole file. We pull the most relevant pre-indexed chunks for the matched
 # collection and hard-cap their combined size to stay well inside the context
@@ -123,44 +154,6 @@ def _knowledge_chunks(routing_text: str, collection: str) -> tuple[str, str]:
     return layout_chunks[:_MAX_KNOWLEDGE_CHARS], global_chunks[:_MAX_KNOWLEDGE_CHARS]
 
 
-# Knowledge documents uploaded to the Anthropic Files API via
-# scripts/upload_knowledge_to_anthropic.py. translate_text grounds itself in
-# these files (served by file_id) instead of the local keyword index. Loaded
-# best-effort: a missing/invalid map must never break app import — an empty map
-# just means no document blocks are attached.
-_FILE_IDS_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "knowledge", ".anthropic_file_ids.json"
-)
-_MASTER_RULES_FILE = "01_ALL_IN_ONE_KNOWLEDGE_MASTER_RULES.txt"
-
-try:
-    with open(_FILE_IDS_PATH, encoding="utf-8") as _ids_file:
-        _ANTHROPIC_FILE_IDS = json.load(_ids_file)
-except (OSError, ValueError):
-    _ANTHROPIC_FILE_IDS = {}
-
-
-def _document_block(filename: str) -> dict | None:
-    """A Files-API document content block for an uploaded knowledge file, or
-    None when that file has no known file_id."""
-    file_id = _ANTHROPIC_FILE_IDS.get(filename)
-    if not file_id:
-        return None
-    return {"type": "document", "source": {"type": "file", "file_id": file_id}}
-
-
-def _knowledge_document_blocks(collection: str) -> list[dict]:
-    """Grounding documents for a translation: the global master rules plus the
-    matched collection's reference file, both served from the Anthropic Files
-    API. Returns whatever is available (possibly empty) - never raises."""
-    blocks: list[dict] = []
-    for filename in (_MASTER_RULES_FILE, f"{collection}.pdf"):
-        block = _document_block(filename)
-        if block:
-            blocks.append(block)
-    return blocks
-
-
 def translate_text(
     text: str,
     source_language: str = "auto-detect",
@@ -170,35 +163,50 @@ def translate_text(
 ) -> str:
     """Translate extracted document text and return a layout_plan_json STRING.
 
-    Used for DOCX/TXT sources (clean text). Resolves the knowledge collection,
-    attaches the matching knowledge documents from the Anthropic Files API
-    (master rules + collection samples) plus the source text, and asks the model
-    for ONLY the layout_plan_json (parsed/rendered downstream into a DOCX).
+    Used for DOCX/TXT sources (clean text). Grounds the translation in the
+    Anthropic Files API knowledge documents (the global master files plus the
+    matched collection's reference file) and asks the model for ONLY the
+    layout_plan_json (parsed/rendered downstream into a DOCX).
     """
-    collection = _resolve_collection(legal_domain, text)
+    collection = legal_domain or "A_Banking_Financial"
 
-    content: list[dict] = _knowledge_document_blocks(collection)
-    content.append(
-        {
-            "type": "text",
-            "text": (
-                f"{_MANDATORY_PROCESS}\n"
-                f"## Knowledge Collection: {collection}\n"
-                f"(Master rules and matching layout samples are attached above "
-                f"as documents.)\n\n"
-                f"## Source Document:\n{text}\n\n"
-                f"Translate this document to {target_language} and output ONLY a "
-                f"valid layout_plan_json.\nNo explanation. No markdown. Only JSON."
-            ),
-        }
-    )
+    messages_content: list[dict] = []
 
-    response = _client.beta.messages.create(
+    # Global controlling rules first, then the collection-specific reference.
+    for master_file in MASTER_FILES:
+        file_id = ANTHROPIC_FILE_IDS.get(master_file)
+        if file_id:
+            messages_content.append({
+                "type": "document",
+                "source": {"type": "file", "file_id": file_id},
+            })
+
+    collection_filename = COLLECTION_TO_FILE.get(collection)
+    if collection_filename:
+        file_id = ANTHROPIC_FILE_IDS.get(collection_filename)
+        if file_id:
+            messages_content.append({
+                "type": "document",
+                "source": {"type": "file", "file_id": file_id},
+            })
+
+    messages_content.append({
+        "type": "text",
+        "text": (
+            f"Translate the following document to {target_language}.\n"
+            f"Collection: {collection}\n"
+            f"Output ONLY a valid layout_plan_json — no explanation, no markdown, "
+            f"JSON only.\n\n"
+            f"SOURCE TEXT:\n{text}"
+        ),
+    })
+
+    response = _client.messages.create(
         model=settings.ANTHROPIC_MODEL,
         max_tokens=settings.ANTHROPIC_MAX_OUTPUT_TOKENS,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": content}],
-        betas=["files-api-2025-04-14"],
+        messages=[{"role": "user", "content": messages_content}],
+        extra_headers={"anthropic-beta": "files-api-2025-04-14"},
         timeout=timeout,
     )
 
