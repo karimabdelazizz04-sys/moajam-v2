@@ -3,142 +3,213 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>لوحة الإدارة | Moajam Almaani (Demo Login)</title>
+<title>Lindo Translation — لوحة الإدارة</title>
 <style>
   :root{
-    --bg:#0f172a;--sidebar:#111827;--sidebar-hover:#1f2937;--accent:#4f46e5;--accent-light:#6366f1;
-    --card:#ffffff;--page-bg:#f4f6fb;--text-dark:#111827;--text-muted:#6b7280;--border:#e5e7eb;
-    --success:#16a34a;--warning:#d97706;--danger:#dc2626;--info:#2563eb;--radius:12px;
+    --bg-main:#0b0b12;--bg-card:#111119;--bg-elevated:#14141f;
+    --border:#1e1e2e;--border-hover:#6366f1;
+    --accent1:#6366f1;--accent2:#8b5cf6;
+    --accent-gradient:linear-gradient(135deg,#6366f1,#8b5cf6);
+    --text-main:#f4f4f8;--text-secondary:#8b8ba3;--text-muted:#5c5c74;
+    --success:#34d399;--success-bg:rgba(16,185,129,.12);
+    --warning:#fbbf24;--warning-bg:rgba(245,158,11,.12);
+    --danger:#f87171;--danger-bg:rgba(239,68,68,.12);
+    --info:#60a5fa;--info-bg:rgba(59,130,246,.12);
+    --radius-btn:8px;--radius-card:12px;
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:"Segoe UI","Tahoma",sans-serif;background:var(--page-bg);color:var(--text-dark);}
+  html,body{height:100%;}
+  body{margin:0;font-family:"Segoe UI","Tahoma",system-ui,sans-serif;background:var(--bg-main);color:var(--text-main);-webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#242438;border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
 
-  #login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1e1b4b,#312e81 50%,#4f46e5);display:flex;align-items:center;justify-content:center;z-index:1000;}
-  .login-box{background:var(--card);width:100%;max-width:380px;padding:36px 32px;border-radius:var(--radius);box-shadow:0 20px 50px rgba(0,0,0,.35);text-align:center;}
-  .login-box h1{margin:0 0 6px;font-size:22px;color:var(--accent);}
-  .login-box p{margin:0 0 24px;color:var(--text-muted);font-size:14px;}
-  .demo-pill{display:inline-block;background:#fef3c7;color:#92400e;font-size:11.5px;padding:4px 10px;border-radius:20px;margin-bottom:18px;font-weight:600;}
-  .login-box input{width:100%;padding:12px 14px;margin-bottom:14px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#f9fafb;}
-  .login-box input:focus{outline:2px solid var(--accent-light);background:#fff;}
-  .login-box button{width:100%;padding:12px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
-  .login-box button:hover{background:var(--accent-light);}
+  /* ---------- Logo ---------- */
+  .logo{width:34px;height:34px;border-radius:50%;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:17px;box-shadow:0 4px 14px rgba(99,102,241,.4);flex-shrink:0;}
+  .logo.lg{width:56px;height:56px;font-size:26px;}
+
+  /* ---------- Login ---------- */
+  #login-screen{position:fixed;inset:0;background:radial-gradient(1200px 600px at 50% -10%,rgba(99,102,241,.18),transparent 60%),var(--bg-main);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .login-box{background:var(--bg-card);width:100%;max-width:400px;padding:36px 32px;border-radius:16px;border:1px solid var(--border);box-shadow:0 30px 80px rgba(0,0,0,.6);text-align:center;}
+  .login-brand{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:22px;}
+  .login-brand h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px;}
+  .login-box .demo-pill{display:inline-block;background:var(--warning-bg);color:var(--warning);font-size:11.5px;padding:5px 12px;border-radius:20px;margin-bottom:16px;font-weight:600;border:1px solid rgba(245,158,11,.25);}
+  .login-box p{margin:0 0 22px;color:var(--text-secondary);font-size:13.5px;line-height:1.7;}
+  .login-box input{width:100%;padding:12px 14px;margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius-btn);font-size:14px;background:var(--bg-elevated);color:var(--text-main);transition:.15s;}
+  .login-box input::placeholder{color:var(--text-muted);}
+  .login-box input:focus{outline:none;border-color:var(--border-hover);box-shadow:0 0 0 3px rgba(99,102,241,.18);}
+  .login-box button[type=submit]{width:100%;padding:12px;border:none;border-radius:var(--radius-btn);background:var(--accent-gradient);color:#fff;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,.35);transition:.15s;}
+  .login-box button[type=submit]:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.5);}
   .login-msg{font-size:13px;margin-top:12px;min-height:18px;color:var(--danger);}
+  .login-foot{margin-top:22px;font-size:12px;color:var(--text-muted);}
+  .lindo-mark{background:var(--accent-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;}
 
+  /* ---------- App shell ---------- */
   #app{display:none;min-height:100vh;}
   .layout{display:flex;min-height:100vh;}
-  .sidebar{width:250px;flex-shrink:0;background:var(--sidebar);color:#cbd5e1;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:transform .25s ease;z-index:200;}
-  .sidebar .brand{display:flex;align-items:center;gap:10px;padding:22px 20px;border-bottom:1px solid #1f2937;}
-  .sidebar .brand .logo{width:34px;height:34px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;}
-  .sidebar .brand span{font-weight:700;color:#fff;font-size:16px;}
-  .nav-list{list-style:none;margin:0;padding:14px 10px;flex:1;overflow-y:auto;}
-  .nav-list li{margin-bottom:4px;}
-  .nav-list button{width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;color:inherit;padding:12px 14px;border-radius:8px;font-size:14px;cursor:pointer;text-align:right;transition:.15s;}
+  .sidebar{width:250px;flex-shrink:0;background:var(--bg-card);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:transform .25s ease;z-index:200;}
+  .sidebar .brand{display:flex;align-items:center;gap:11px;padding:20px 18px;border-bottom:1px solid var(--border);}
+  .sidebar .brand span{font-weight:700;color:var(--text-main);font-size:15px;}
+  .nav-list{list-style:none;margin:0;padding:10px 12px;flex:1;overflow-y:auto;}
+  .nav-section-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:14px 12px 6px;font-weight:600;}
+  .nav-list li{margin-bottom:3px;}
+  .nav-list button{width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;color:var(--text-secondary);padding:11px 13px;border-radius:var(--radius-btn);font-size:13.5px;cursor:pointer;text-align:start;transition:.15s;font-family:inherit;position:relative;}
   .nav-list button .icon{font-size:16px;width:20px;text-align:center;}
-  .nav-list button:hover{background:var(--sidebar-hover);color:#fff;}
-  .nav-list button.active{background:var(--accent);color:#fff;font-weight:600;}
-  .sidebar-footer{padding:14px 16px;border-top:1px solid #1f2937;font-size:12px;color:#64748b;display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .sidebar-footer button{background:none;border:1px solid #374151;color:#cbd5e1;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;}
-  .sidebar-footer button:hover{background:#1f2937;color:#fff;}
-  .menu-toggle{display:none;background:var(--accent);color:#fff;border:none;width:40px;height:40px;border-radius:8px;font-size:18px;cursor:pointer;}
-  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;}
+  .nav-list button:hover{background:var(--bg-elevated);color:var(--text-main);}
+  .nav-list button.active{background:rgba(99,102,241,.12);color:var(--text-main);font-weight:600;}
+  .nav-list button.active::before{content:"";position:absolute;inset-inline-start:0;top:50%;transform:translateY(-50%);width:3px;height:60%;border-radius:0 3px 3px 0;background:var(--accent-gradient);}
+  .sidebar-footer{padding:14px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .sidebar-footer #current-user{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sidebar-footer button{background:none;border:1px solid var(--border);color:var(--text-secondary);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;transition:.15s;}
+  .sidebar-footer button:hover{background:var(--bg-elevated);color:var(--text-main);border-color:var(--border-hover);}
+
+  .menu-toggle{display:none;background:var(--accent-gradient);color:#fff;border:none;width:40px;height:40px;border-radius:var(--radius-btn);font-size:18px;cursor:pointer;}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;}
   .main{flex:1;min-width:0;display:flex;flex-direction:column;}
-  .topbar{background:#fff;border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:10px;}
-  .topbar h2{margin:0;font-size:19px;}
-  .right-group{display:flex;align-items:center;gap:14px;}
-  .user-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);}
-  .user-chip .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;}
-  .icon-btn{background:none;border:1px solid var(--border);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;}
-  .icon-btn:hover{background:#f3f4f6;}
-  .banner{padding:10px 28px;font-size:13px;display:none;align-items:center;justify-content:space-between;gap:10px;}
+
+  .topbar{background:rgba(17,17,25,.75);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:14px 26px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:14px;}
+  .topbar h2{margin:0;font-size:18px;font-weight:600;}
+  .topbar-search{flex:1;max-width:360px;position:relative;}
+  .topbar-search input{width:100%;padding:9px 14px 9px 36px;border:1px solid var(--border);border-radius:var(--radius-btn);font-size:13px;background:var(--bg-elevated);color:var(--text-main);}
+  .topbar-search input::placeholder{color:var(--text-muted);}
+  .topbar-search input:focus{outline:none;border-color:var(--border-hover);}
+  .topbar-search .s-icon{position:absolute;top:50%;transform:translateY(-50%);inset-inline-start:12px;color:var(--text-muted);font-size:14px;pointer-events:none;}
+  .right-group{display:flex;align-items:center;gap:12px;}
+  .lang-toggle{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-btn);overflow:hidden;background:var(--bg-elevated);}
+  .lang-toggle button{background:none;border:none;color:var(--text-secondary);padding:6px 11px;font-size:12px;cursor:pointer;font-weight:700;font-family:inherit;transition:.15s;}
+  .lang-toggle button.active{background:var(--accent-gradient);color:#fff;}
+  .icon-btn{background:var(--bg-elevated);border:1px solid var(--border);width:36px;height:36px;border-radius:var(--radius-btn);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);transition:.15s;position:relative;}
+  .icon-btn:hover{color:var(--text-main);border-color:var(--border-hover);}
+  .bell-dot{position:absolute;top:8px;inset-inline-end:9px;width:7px;height:7px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger);}
+  .user-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);}
+  .user-chip .avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+
+  .banner{padding:10px 26px;font-size:13px;display:none;align-items:center;justify-content:space-between;gap:10px;}
   .banner.show{display:flex;}
-  .banner.demo{background:#fff7ed;color:#92400e;border-bottom:1px solid #fed7aa;}
-  .banner button{background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:12.5px;}
-  .content{padding:24px 28px 60px;flex:1;}
-  .tabs{display:flex;gap:6px;border-bottom:2px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
-  .tabs button{background:none;border:none;padding:10px 18px;font-size:14px;color:var(--text-muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;font-weight:500;}
-  .tabs button:hover{color:var(--accent);}
-  .tabs button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+  .banner.demo{background:var(--warning-bg);color:var(--warning);border-bottom:1px solid rgba(245,158,11,.2);}
+  .banner button{background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:12.5px;font-family:inherit;}
+
+  .content{padding:24px 26px 30px;flex:1;}
+  .app-footer{text-align:center;padding:18px;color:var(--text-muted);font-size:12px;border-top:1px solid var(--border);}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
+  .tabs button{background:none;border:none;padding:10px 16px;font-size:13.5px;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500;font-family:inherit;transition:.15s;}
+  .tabs button:hover{color:var(--text-main);}
+  .tabs button.active{color:var(--text-main);border-bottom-color:var(--accent1);font-weight:600;}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;animation:fade .2s ease;}
   @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
   .page{display:none;}
   .page.active{display:block;}
-  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:26px;}
-  .stat-card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border);}
-  .stat-card .label{font-size:13px;color:var(--text-muted);margin-bottom:8px;}
-  .stat-card .value{font-size:26px;font-weight:700;}
-  .stat-card .trend{font-size:12px;margin-top:6px;color:var(--text-muted);}
-  .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);padding:22px;margin-bottom:20px;}
-  .card h3{margin:0 0 16px;font-size:16px;}
+
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .stat-card{position:relative;background:var(--bg-card);border-radius:var(--radius-card);padding:20px;border:1px solid var(--border);overflow:hidden;transition:.15s;}
+  .stat-card:hover{border-color:#2a2a40;}
+  .stat-card::before{content:"";position:absolute;top:0;inset-inline:0;height:2px;background:var(--accent-gradient);}
+  .stat-card.sc-total::before{background:linear-gradient(90deg,#6366f1,#8b5cf6);}
+  .stat-card.sc-processing::before{background:linear-gradient(90deg,#fbbf24,#f59e0b);}
+  .stat-card.sc-done::before{background:linear-gradient(90deg,#34d399,#10b981);}
+  .stat-card.sc-failed::before{background:linear-gradient(90deg,#f87171,#ef4444);}
+  .stat-card .label{font-size:13px;color:var(--text-secondary);margin-bottom:10px;}
+  .stat-card .value{font-size:28px;font-weight:700;color:var(--text-main);}
+  .stat-card .trend{font-size:11.5px;margin-top:6px;color:var(--text-muted);}
+
+  .card{background:var(--bg-card);border-radius:var(--radius-card);border:1px solid var(--border);padding:22px;margin-bottom:20px;}
+  .card h3{margin:0 0 16px;font-size:15px;color:var(--text-main);}
+
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  th,td{padding:12px 10px;text-align:right;border-bottom:1px solid var(--border);}
-  th{color:var(--text-muted);font-weight:600;font-size:12.5px;text-transform:uppercase;}
-  tbody tr:hover{background:#f9fafb;}
-  .badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;}
-  .badge.success{background:#dcfce7;color:var(--success);}
-  .badge.warning{background:#fef3c7;color:var(--warning);}
-  .badge.danger{background:#fee2e2;color:var(--danger);}
-  .badge.info{background:#e0e7ff;color:var(--accent);}
-  .badge.muted{background:#f1f5f9;color:var(--text-muted);}
+  th,td{padding:13px 12px;text-align:start;border-bottom:1px solid var(--border);}
+  th{color:var(--text-secondary);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  td{color:var(--text-main);}
+  tbody tr{transition:background .12s;}
+  tbody tr:hover{background:var(--bg-elevated);}
+  tbody tr:last-child td{border-bottom:none;}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:600;line-height:1.6;}
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;flex-shrink:0;}
+  .badge.success{color:var(--success);background:var(--success-bg);}
+  .badge.warning{color:var(--warning);background:var(--warning-bg);}
+  .badge.danger{color:var(--danger);background:var(--danger-bg);}
+  .badge.info{color:var(--info);background:var(--info-bg);}
+  .badge.muted{color:var(--text-secondary);background:rgba(139,139,163,.12);}
+  .badge.info::before{animation:pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(1.6);}}
+
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
-  .toolbar .filters{display:flex;gap:8px;flex-wrap:wrap;}
-  .toolbar input[type=search],.toolbar select{padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:180px;}
-  .btn{background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
-  .btn:hover{background:var(--accent-light);}
-  .btn:disabled{opacity:.6;cursor:not-allowed;}
-  .btn.outline{background:#fff;color:var(--accent);border:1px solid var(--accent);}
-  .btn.outline:hover{background:#eef2ff;}
-  .btn.sm{padding:6px 12px;font-size:12.5px;}
+  .toolbar .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .toolbar input[type=search],.toolbar select,#track-job-id{padding:9px 14px;border:1px solid var(--border);border-radius:var(--radius-btn);font-size:13px;min-width:180px;background:var(--bg-elevated);color:var(--text-main);font-family:inherit;}
+  .toolbar input[type=search]::placeholder{color:var(--text-muted);}
+  .toolbar input:focus,.toolbar select:focus,#track-job-id:focus{outline:none;border-color:var(--border-hover);}
+
+  .btn{background:var(--accent-gradient);color:#fff;border:none;padding:10px 18px;border-radius:var(--radius-btn);font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(99,102,241,.35);transition:.15s;font-family:inherit;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.5);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none;}
+  .btn.outline{background:transparent;color:var(--text-main);border:1px solid var(--border);box-shadow:none;}
+  .btn.outline:hover{border-color:var(--border-hover);background:var(--bg-elevated);transform:none;}
+  .btn.sm{padding:6px 12px;font-size:12.5px;box-shadow:none;}
+  .btn.sm:hover{transform:none;box-shadow:0 4px 12px rgba(99,102,241,.3);}
+
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
   .form-grid .full{grid-column:1/-1;}
-  .form-field label{display:block;font-size:13px;margin-bottom:6px;color:var(--text-muted);font-weight:500;}
-  .form-field input,.form-field select,.form-field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;}
+  .form-field label{display:block;font-size:13px;margin-bottom:6px;color:var(--text-secondary);font-weight:500;}
+  .form-field input,.form-field select,.form-field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-btn);font-size:13.5px;background:var(--bg-elevated);color:var(--text-main);font-family:inherit;transition:.15s;}
+  .form-field input::placeholder,.form-field textarea::placeholder{color:var(--text-muted);}
+  .form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--border-hover);box-shadow:0 0 0 3px rgba(99,102,241,.15);}
   .form-field textarea{resize:vertical;min-height:80px;}
-  .form-field .hint{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
-  .placeholder-report{border:2px dashed var(--border);border-radius:var(--radius);padding:50px 20px;text-align:center;color:var(--text-muted);}
+  .form-field input[type=file]{padding:9px 12px;color:var(--text-secondary);}
+  .form-field .hint,.hint{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+
+  .placeholder-report{border:1px dashed var(--border);border-radius:var(--radius-card);padding:50px 20px;text-align:center;color:var(--text-secondary);}
   .placeholder-report .big{font-size:36px;margin-bottom:10px;}
-  .alert{padding:12px 16px;border-radius:8px;font-size:13.5px;margin-bottom:16px;display:none;}
+
+  .alert{padding:12px 16px;border-radius:var(--radius-btn);font-size:13.5px;margin-bottom:16px;display:none;border:1px solid transparent;}
   .alert.show{display:block;}
-  .alert.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
-  .alert.success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
-  .alert.info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;}
-  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+  .alert.error{background:var(--danger-bg);color:#fca5a5;border-color:rgba(239,68,68,.3);}
+  .alert.success{background:var(--success-bg);color:#6ee7b7;border-color:rgba(16,185,129,.3);}
+  .alert.info{background:rgba(99,102,241,.1);color:#a5b4fc;border-color:rgba(99,102,241,.3);}
+
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
   @keyframes spin{to{transform:rotate(360deg);}}
-  .skeleton{background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:skeleton 1.4s ease infinite;border-radius:6px;}
+  .skeleton{background:linear-gradient(90deg,#14141f 25%,#1e1e2e 37%,#14141f 63%);background-size:400% 100%;animation:skeleton 1.4s ease infinite;border-radius:var(--radius-btn);}
   @keyframes skeleton{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
-  .progress-wrap{background:#e5e7eb;border-radius:999px;height:8px;overflow:hidden;margin-top:8px;}
-  .progress-bar{height:100%;background:var(--accent);width:0%;transition:width .4s ease;border-radius:999px;}
-  #toast-container{position:fixed;bottom:20px;left:20px;z-index:2000;display:flex;flex-direction:column;gap:10px;}
-  .toast{background:#111827;color:#fff;padding:12px 18px;border-radius:8px;font-size:13.5px;box-shadow:0 6px 20px rgba(0,0,0,.25);min-width:240px;max-width:340px;animation:toastIn .25s ease;}
-  .toast.success{border-right:4px solid var(--success);}
-  .toast.error{border-right:4px solid var(--danger);}
-  .toast.info{border-right:4px solid var(--info);}
+  .progress-wrap{background:var(--border);border-radius:999px;height:8px;overflow:hidden;margin-top:8px;}
+  .progress-bar{height:100%;background:var(--accent-gradient);width:0%;transition:width .4s ease;border-radius:999px;}
+
+  #toast-container{position:fixed;bottom:20px;inset-inline-start:20px;z-index:2000;display:flex;flex-direction:column;gap:10px;}
+  .toast{background:var(--bg-elevated);color:var(--text-main);border:1px solid var(--border);padding:12px 18px;border-radius:10px;font-size:13.5px;box-shadow:0 12px 34px rgba(0,0,0,.55);min-width:240px;max-width:340px;animation:toastIn .25s ease;border-inline-start:3px solid var(--text-muted);}
+  .toast.success{border-inline-start-color:var(--success);}
+  .toast.error{border-inline-start-color:var(--danger);}
+  .toast.info{border-inline-start-color:var(--info);}
   @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1500;align-items:center;justify-content:center;}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:1500;align-items:center;justify-content:center;padding:20px;}
   .modal-overlay.show{display:flex;}
-  .modal{background:#fff;border-radius:var(--radius);padding:26px;width:100%;max-width:460px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;}
-  .modal h3{margin:0 0 6px;}
-  .modal p.sub{font-size:12.5px;color:var(--text-muted);margin:0 0 18px;}
+  .modal{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:26px;width:100%;max-width:460px;box-shadow:0 30px 80px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto;}
+  .modal h3{margin:0 0 6px;color:var(--text-main);}
+  .modal p.sub{font-size:12.5px;color:var(--text-secondary);margin:0 0 18px;line-height:1.7;}
   .modal .modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
-  @media (max-width:980px){.stats-grid{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}}
+
+  @media (max-width:980px){.stats-grid{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}.topbar-search{display:none;}}
   @media (max-width:768px){
     .menu-toggle{display:inline-flex;align-items:center;justify-content:center;}
-    .sidebar{position:fixed;top:0;right:0;height:100vh;transform:translateX(100%);}
-    .sidebar.open{transform:translateX(0);}
+    .sidebar{position:fixed;top:0;inset-inline-end:0;height:100vh;transform:translateX(100%);}
+    html[dir=rtl] .sidebar{transform:translateX(-100%);}
+    .sidebar.open{transform:translateX(0)!important;}
     .overlay.show{display:block;}
-    .topbar{padding:14px 16px;}
+    .topbar{padding:12px 16px;}
     .banner{padding:10px 16px;}
-    .content{padding:18px 16px 50px;}
+    .content{padding:18px 16px 30px;}
     .stats-grid{grid-template-columns:1fr 1fr;gap:12px;}
-    .stat-card .value{font-size:21px;}
+    .stat-card .value{font-size:22px;}
     table{font-size:12.5px;}
-    th,td{padding:9px 6px;}
+    th,td{padding:10px 7px;}
   }
   @media (max-width:480px){
     .stats-grid{grid-template-columns:1fr;}
     .tabs{gap:2px;}
-    .tabs button{padding:8px 12px;font-size:13px;}
-    #toast-container{left:10px;right:10px;}
+    .tabs button{padding:8px 11px;font-size:13px;}
+    #toast-container{inset-inline:10px;}
     .toast{max-width:none;}
   }
 </style>
@@ -147,15 +218,19 @@
 
 <div id="login-screen">
   <div class="login-box">
-    <h1>تسجيل الدخول</h1>
-    <div class="demo-pill">⚠️ وضع تجريبي: أي بيانات تدخلها هنا تدخلك مباشرة</div>
-    <p>هذا اللوجن شكلي فقط. للوصول للبيانات الحقيقية، اضبط Bearer Token و X-API-Key من ⚙️ الإعدادات بعد الدخول.</p>
+    <div class="login-brand">
+      <div class="logo lg">L</div>
+      <h1>Lindo Translation</h1>
+    </div>
+    <div class="demo-pill" data-i18n="login_demo">⚠️ وضع تجريبي: أي بيانات تدخلها هنا تدخلك مباشرة</div>
+    <p data-i18n="login_desc">هذا اللوجن شكلي فقط. للوصول للبيانات الحقيقية، اضبط Bearer Token و X-API-Key من ⚙️ الإعدادات بعد الدخول.</p>
     <form id="login-form">
-      <input type="text" id="login-user" placeholder="اسم المستخدم (أي قيمة)" required>
-      <input type="password" id="login-pass" placeholder="كلمة المرور (أي قيمة)" required>
-      <button type="submit">دخول</button>
+      <input type="text" id="login-user" placeholder="اسم المستخدم (أي قيمة)" data-i18n-ph="login_user_ph" required>
+      <input type="password" id="login-pass" placeholder="كلمة المرور (أي قيمة)" data-i18n-ph="login_pass_ph" required>
+      <button type="submit" data-i18n="login_btn">دخول</button>
       <div class="login-msg" id="login-msg"></div>
     </form>
+    <div class="login-foot">Powered by <span class="lindo-mark">Lindo</span></div>
   </div>
 </div>
 
@@ -164,31 +239,31 @@
 
   <div class="modal-overlay" id="settings-modal">
     <div class="modal">
-      <h3>إعدادات الاتصال بالـ API</h3>
-      <p class="sub">
+      <h3 data-i18n="settings_title">إعدادات الاتصال بالـ API</h3>
+      <p class="sub" data-i18n="settings_sub">
         تُحفظ هذه القيم في متصفحك فقط (localStorage) ولا تُكتب داخل هذا الملف أبداً.
         لا تضع هنا أي مفتاح Anthropic — هذه الحقول خاصة بـ backend الموقع فقط.
       </p>
       <div class="form-field" style="margin-bottom:14px;"><label>Base URL</label><input type="text" id="settings-base-url"></div>
       <div class="form-field" style="margin-bottom:14px;">
-        <label>X-API-Key (لمسارات الترجمة /api/v1/translations)</label>
-        <input type="password" id="settings-api-key" placeholder="اتركه فاضي لو غير متوفر">
+        <label data-i18n="settings_apikey_label">X-API-Key (لمسارات الترجمة /api/v1/translations)</label>
+        <input type="password" id="settings-api-key" placeholder="اتركه فاضي لو غير متوفر" data-i18n-ph="settings_apikey_ph">
       </div>
       <div class="form-field" style="margin-bottom:14px;">
-        <label>Bearer Token (لـ /clients و /invoices و /accounting/accounts)</label>
-        <input type="password" id="settings-bearer-token" placeholder="احصل عليه من /docs أو من فريق الباك إند">
-        <div class="hint">هذا اللوجن شكلي ولا يولّد توكن حقيقي. لو عايز بيانات حقيقية، حصّل التوكن بنفسك وحطه هنا.</div>
+        <label data-i18n="settings_bearer_label">Bearer Token (لـ /clients و /invoices و /accounting/accounts)</label>
+        <input type="password" id="settings-bearer-token" placeholder="احصل عليه من /docs أو من فريق الباك إند" data-i18n-ph="settings_bearer_ph">
+        <div class="hint" data-i18n="settings_bearer_hint">هذا اللوجن شكلي ولا يولّد توكن حقيقي. لو عايز بيانات حقيقية، حصّل التوكن بنفسك وحطه هنا.</div>
       </div>
       <div class="form-field">
-        <label>WordPress Media Upload (اختياري — لرفع ملفات حقيقية)</label>
+        <label data-i18n="settings_wp_label">WordPress Media Upload (اختياري — لرفع ملفات حقيقية)</label>
         <input type="text" id="settings-wp-url" placeholder="https://moajamalmaani.com" style="margin-bottom:8px;">
         <input type="text" id="settings-wp-user" placeholder="WordPress username" style="margin-bottom:8px;">
         <input type="password" id="settings-wp-app-password" placeholder="WordPress Application Password">
-        <div class="hint">لو فاضي، رفع الملفات هيشتغل في وضع Demo فقط (محاكاة وليس رفع حقيقي).</div>
+        <div class="hint" data-i18n="settings_wp_hint">لو فاضي، رفع الملفات هيشتغل في وضع Demo فقط (محاكاة وليس رفع حقيقي).</div>
       </div>
       <div class="modal-actions">
-        <button class="btn outline" id="settings-cancel">إغلاق</button>
-        <button class="btn" id="settings-save">حفظ</button>
+        <button class="btn outline" id="settings-cancel" data-i18n="close">إغلاق</button>
+        <button class="btn" id="settings-save" data-i18n="save">حفظ</button>
       </div>
     </div>
   </div>
@@ -196,39 +271,51 @@
   <div class="overlay" id="overlay"></div>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="logo">M</div><span>نظام الإدارة</span></div>
+      <div class="brand"><div class="logo">L</div><span>Lindo Translation</span></div>
       <ul class="nav-list" id="nav-list">
-        <li><button class="nav-btn active" data-page="dashboard"><span class="icon">📊</span> Dashboard</button></li>
-        <li><button class="nav-btn" data-page="translations"><span class="icon">📝</span> Translations</button></li>
-        <li><button class="nav-btn" data-page="clients"><span class="icon">👥</span> Clients Management</button></li>
-        <li><button class="nav-btn" data-page="invoicing"><span class="icon">🧾</span> Invoicing System</button></li>
-        <li><button class="nav-btn" data-page="erp"><span class="icon">📚</span> ERP &amp; Accounting</button></li>
-        <li><button class="nav-btn" data-page="knowledge"><span class="icon">📚</span> Knowledge Base</button></li>
+        <li class="nav-section-label" data-i18n="sec_general">عام</li>
+        <li><button class="nav-btn active" data-page="dashboard"><span class="icon">📊</span> <span data-i18n="nav_overview">نظرة عامة</span></button></li>
+        <li><button class="nav-btn" data-page="translations"><span class="icon">📝</span> <span data-i18n="nav_translations">الترجمات</span></button></li>
+        <li><button class="nav-btn" data-page="clients"><span class="icon">👥</span> <span data-i18n="nav_clients">العملاء</span></button></li>
+        <li class="nav-section-label" data-i18n="sec_finance">مالية</li>
+        <li><button class="nav-btn" data-page="invoicing"><span class="icon">🧾</span> <span data-i18n="nav_invoices">الفواتير</span></button></li>
+        <li><button class="nav-btn" data-page="erp"><span class="icon">📈</span> <span data-i18n="nav_reports">التقارير المالية</span></button></li>
+        <li class="nav-section-label" data-i18n="sec_system">النظام</li>
+        <li><button class="nav-btn" data-page="knowledge"><span class="icon">📚</span> <span data-i18n="nav_knowledge">قاعدة المعرفة</span></button></li>
       </ul>
       <div class="sidebar-footer">
         <span id="current-user">—</span>
-        <div style="display:flex;gap:6px;">
-          <button id="open-settings-btn" title="إعدادات الـ API">⚙️</button>
-          <button id="logout-btn">خروج</button>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button id="open-settings-btn" title="إعدادات الـ API" data-i18n-title="settings_title">⚙️</button>
+          <button id="logout-btn" data-i18n="logout">خروج</button>
         </div>
       </div>
     </aside>
 
     <div class="main">
       <div class="topbar">
-        <div style="display:flex;align-items:center;gap:14px;">
+        <div style="display:flex;align-items:center;gap:12px;">
           <button class="menu-toggle" id="menu-toggle">☰</button>
-          <h2 id="page-title">Dashboard</h2>
+          <h2 id="page-title" data-i18n="nav_overview">نظرة عامة</h2>
+        </div>
+        <div class="topbar-search">
+          <span class="s-icon">🔍</span>
+          <input type="search" id="global-search" placeholder="بحث..." data-i18n-ph="search_ph">
         </div>
         <div class="right-group">
-          <button class="icon-btn" id="refresh-btn" title="تحديث البيانات">⟳</button>
+          <div class="lang-toggle">
+            <button type="button" data-lang="ar">AR</button>
+            <button type="button" data-lang="en">EN</button>
+          </div>
+          <button class="icon-btn" id="notif-btn" title="الإشعارات">🔔<span class="bell-dot"></span></button>
+          <button class="icon-btn" id="refresh-btn" title="تحديث البيانات" data-i18n-title="refresh">⟳</button>
           <div class="user-chip"><div class="avatar" id="avatar-letter">A</div><span id="topbar-user">Admin</span></div>
         </div>
       </div>
 
       <div class="banner demo" id="demo-banner">
-        <span id="demo-banner-text">⚠️ وضع تجريبي — البيانات المعروضة Demo لعدم توفر Bearer Token / X-API-Key أو لتعذر الاتصال بالخادم.</span>
-        <button id="open-settings-from-banner">ضبط الإعدادات</button>
+        <span id="demo-banner-text" data-i18n="demo_banner">⚠️ وضع تجريبي — البيانات المعروضة Demo لعدم توفر Bearer Token / X-API-Key أو لتعذر الاتصال بالخادم.</span>
+        <button id="open-settings-from-banner" data-i18n="configure">ضبط الإعدادات</button>
       </div>
 
       <div class="content">
@@ -236,59 +323,59 @@
         <section class="page active" id="page-dashboard">
           <div class="alert" id="dashboard-alert"></div>
           <div class="stats-grid">
-            <div class="stat-card"><div class="label">إجمالي طلبات الترجمة</div><div class="value" id="stat-total">—</div><div class="trend">من /api/v1/translations</div></div>
-            <div class="stat-card"><div class="label">قيد التنفيذ</div><div class="value" id="stat-processing">—</div><div class="trend">processing + pending</div></div>
-            <div class="stat-card"><div class="label">مكتملة</div><div class="value" id="stat-done">—</div><div class="trend">status = done</div></div>
-            <div class="stat-card"><div class="label">فاشلة</div><div class="value" id="stat-failed">—</div><div class="trend">status = failed</div></div>
+            <div class="stat-card sc-total"><div class="label" data-i18n="stat_total">إجمالي طلبات الترجمة</div><div class="value" id="stat-total">—</div><div class="trend">/api/v1/translations</div></div>
+            <div class="stat-card sc-processing"><div class="label" data-i18n="stat_processing">قيد التنفيذ</div><div class="value" id="stat-processing">—</div><div class="trend">processing + pending</div></div>
+            <div class="stat-card sc-done"><div class="label" data-i18n="stat_done">مكتملة</div><div class="value" id="stat-done">—</div><div class="trend">status = done</div></div>
+            <div class="stat-card sc-failed"><div class="label" data-i18n="stat_failed">فاشلة</div><div class="value" id="stat-failed">—</div><div class="trend">status = failed</div></div>
           </div>
           <div class="card">
-            <h3>أحدث طلبات الترجمة</h3>
+            <h3 data-i18n="recent_translations">أحدث طلبات الترجمة</h3>
             <div id="dashboard-jobs-table"><div class="skeleton" style="height:160px;"></div></div>
           </div>
         </section>
 
         <section class="page" id="page-translations">
           <div class="tabs" data-group="translations">
-            <button class="tab-btn active" data-tab="trans-upload">رفع ملف للترجمة</button>
-            <button class="tab-btn" data-tab="trans-track">تتبع حالة الترجمة</button>
-            <button class="tab-btn" data-tab="trans-all">كل الطلبات</button>
+            <button class="tab-btn active" data-tab="trans-upload" data-i18n="tab_upload">رفع ملف للترجمة</button>
+            <button class="tab-btn" data-tab="trans-track" data-i18n="tab_track">تتبع حالة الترجمة</button>
+            <button class="tab-btn" data-tab="trans-all" data-i18n="tab_all">كل الطلبات</button>
           </div>
 
           <div class="tab-panel active" id="trans-upload">
             <div class="card">
-              <h3>طلب ترجمة جديد</h3>
-              <div class="alert info show" style="margin-bottom:18px;">
-                الـ API الحقيقي يستقبل <strong>رابط ملف مرفوع مسبقاً</strong> على WordPress Media Library — اختر ملفاً من جهازك
+              <h3 data-i18n="new_translation">طلب ترجمة جديد</h3>
+              <div class="alert info show" style="margin-bottom:18px;" data-i18n="upload_info">
+                الـ API الحقيقي يستقبل رابط ملف مرفوع مسبقاً على WordPress Media Library — اختر ملفاً من جهازك
                 وسنحاول رفعه تلقائياً لو ضبطت بيانات WordPress في ⚙️، وإلا سيتم تشغيل محاكاة Demo فقط (بدون ترجمة حقيقية).
               </div>
               <div class="alert" id="upload-alert"></div>
               <form id="upload-form" class="form-grid">
                 <div class="form-field full">
-                  <label>اختر ملفاً من جهازك</label>
+                  <label data-i18n="pick_file">اختر ملفاً من جهازك</label>
                   <input type="file" id="f-file-picker">
-                  <div class="hint">أو الصق رابط ملف موجود مسبقاً تحت بالحقل التالي بدلاً من رفع ملف جديد.</div>
+                  <div class="hint" data-i18n="pick_file_hint">أو الصق رابط ملف موجود مسبقاً تحت بالحقل التالي بدلاً من رفع ملف جديد.</div>
                 </div>
                 <div class="form-field full">
-                  <label>رابط الملف المصدر (source_file_url)</label>
+                  <label data-i18n="source_url_label">رابط الملف المصدر (source_file_url)</label>
                   <input type="url" id="f-source-url" placeholder="https://moajamalmaani.com/wp-content/uploads/file.pdf">
                 </div>
                 <div class="form-field">
-                  <label>اسم الملف (source_filename) *</label>
+                  <label data-i18n="filename_label">اسم الملف (source_filename) *</label>
                   <input type="text" id="f-source-filename" placeholder="contract.pdf" required>
                 </div>
-                <div class="form-field"><label>اللغة المصدر</label><input type="text" id="f-source-lang" value="auto-detect"></div>
-                <div class="form-field"><label>اللغة الهدف</label><input type="text" id="f-target-lang" value="Arabic"></div>
-                <div class="form-field"><label>التخصص القانوني (اختياري)</label><input type="text" id="f-legal-domain"></div>
-                <div class="form-field"><label>بريد العميل (اختياري)</label><input type="email" id="f-client-email"></div>
-                <div class="form-field"><label>اسم العميل (اختياري)</label><input type="text" id="f-client-name"></div>
-                <div class="form-field"><label>هاتف العميل (اختياري)</label><input type="text" id="f-client-phone"></div>
+                <div class="form-field"><label data-i18n="source_lang">اللغة المصدر</label><input type="text" id="f-source-lang" value="auto-detect"></div>
+                <div class="form-field"><label data-i18n="target_lang">اللغة الهدف</label><input type="text" id="f-target-lang" value="Arabic"></div>
+                <div class="form-field"><label data-i18n="legal_domain">التخصص القانوني (اختياري)</label><input type="text" id="f-legal-domain"></div>
+                <div class="form-field"><label data-i18n="client_email">بريد العميل (اختياري)</label><input type="email" id="f-client-email"></div>
+                <div class="form-field"><label data-i18n="client_name">اسم العميل (اختياري)</label><input type="text" id="f-client-name"></div>
+                <div class="form-field"><label data-i18n="client_phone">هاتف العميل (اختياري)</label><input type="text" id="f-client-phone"></div>
                 <div class="full" style="display:flex;gap:10px;align-items:center;">
-                  <button type="submit" class="btn" id="upload-submit-btn">إرسال للترجمة</button>
-                  <span class="hint">يتطلب X-API-Key — اضبطه من ⚙️</span>
+                  <button type="submit" class="btn" id="upload-submit-btn" data-i18n="send_translation">إرسال للترجمة</button>
+                  <span class="hint" data-i18n="requires_apikey">يتطلب X-API-Key — اضبطه من ⚙️</span>
                 </div>
               </form>
               <div id="upload-progress" style="display:none;margin-top:18px;">
-                <div style="display:flex;justify-content:space-between;font-size:13px;"><span id="progress-label">جارٍ المعالجة...</span><span id="progress-pct">0%</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);"><span id="progress-label">جارٍ المعالجة...</span><span id="progress-pct">0%</span></div>
                 <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
               </div>
             </div>
@@ -296,11 +383,11 @@
 
           <div class="tab-panel" id="trans-track">
             <div class="card">
-              <h3>تتبع حالة طلب ترجمة</h3>
+              <h3 data-i18n="track_title">تتبع حالة طلب ترجمة</h3>
               <div class="alert" id="track-alert"></div>
               <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
-                <input type="text" id="track-job-id" placeholder="job_id" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;">
-                <button class="btn" id="track-btn">تتبع</button>
+                <input type="text" id="track-job-id" placeholder="job_id" style="flex:1;min-width:200px;">
+                <button class="btn" id="track-btn" data-i18n="track_btn">تتبع</button>
               </div>
               <div id="track-result"></div>
             </div>
@@ -309,16 +396,16 @@
           <div class="tab-panel" id="trans-all">
             <div class="card">
               <div class="toolbar">
-                <input type="search" id="trans-search" placeholder="بحث باسم الملف أو العميل...">
+                <input type="search" id="trans-search" placeholder="بحث باسم الملف أو العميل..." data-i18n-ph="search_file_client">
                 <div class="filters">
                   <select id="trans-status-filter">
-                    <option value="">كل الحالات</option>
+                    <option value="" data-i18n="all_statuses">كل الحالات</option>
                     <option value="pending">Pending</option>
                     <option value="processing">Processing</option>
                     <option value="done">Done</option>
                     <option value="failed">Failed</option>
                   </select>
-                  <button class="btn outline sm" id="trans-reload-btn">تحديث</button>
+                  <button class="btn outline sm" id="trans-reload-btn" data-i18n="refresh">تحديث</button>
                 </div>
               </div>
               <div id="translations-table"><div class="skeleton" style="height:200px;"></div></div>
@@ -329,92 +416,92 @@
 
         <section class="page" id="page-clients">
           <div class="tabs" data-group="clients">
-            <button class="tab-btn active" data-tab="clients-all">All Clients</button>
-            <button class="tab-btn" data-tab="clients-add">Add New</button>
-            <button class="tab-btn" data-tab="clients-reports">Reports</button>
+            <button class="tab-btn active" data-tab="clients-all" data-i18n="clients_all">كل العملاء</button>
+            <button class="tab-btn" data-tab="clients-add" data-i18n="clients_add">إضافة عميل</button>
+            <button class="tab-btn" data-tab="clients-reports" data-i18n="reports">تقارير</button>
           </div>
           <div class="tab-panel active" id="clients-all">
             <div class="card">
               <div class="alert" id="clients-alert"></div>
-              <div class="toolbar"><input type="search" id="clients-search" placeholder="ابحث عن عميل..."><button class="btn outline sm" id="clients-reload-btn">تحديث</button></div>
+              <div class="toolbar"><input type="search" id="clients-search" placeholder="ابحث عن عميل..." data-i18n-ph="search_client"><button class="btn outline sm" id="clients-reload-btn" data-i18n="refresh">تحديث</button></div>
               <div id="clients-table"><div class="skeleton" style="height:180px;"></div></div>
             </div>
           </div>
           <div class="tab-panel" id="clients-add">
             <div class="card">
-              <h3>إضافة عميل جديد</h3>
+              <h3 data-i18n="add_client_title">إضافة عميل جديد</h3>
               <div class="alert" id="add-client-alert"></div>
               <form id="add-client-form" class="form-grid">
-                <div class="form-field"><label>اسم العميل *</label><input type="text" id="nc-name" required></div>
-                <div class="form-field"><label>البريد الإلكتروني *</label><input type="email" id="nc-email" required></div>
-                <div class="form-field"><label>رقم الهاتف</label><input type="text" id="nc-phone"></div>
-                <div class="form-field"><label>العنوان</label><input type="text" id="nc-address"></div>
-                <div class="form-field full"><label>ملاحظات</label><textarea id="nc-notes"></textarea></div>
+                <div class="form-field"><label data-i18n="client_name_req">اسم العميل *</label><input type="text" id="nc-name" required></div>
+                <div class="form-field"><label data-i18n="email_req">البريد الإلكتروني *</label><input type="email" id="nc-email" required></div>
+                <div class="form-field"><label data-i18n="phone">رقم الهاتف</label><input type="text" id="nc-phone"></div>
+                <div class="form-field"><label data-i18n="address">العنوان</label><input type="text" id="nc-address"></div>
+                <div class="form-field full"><label data-i18n="notes">ملاحظات</label><textarea id="nc-notes"></textarea></div>
                 <div class="full" style="display:flex;gap:10px;">
-                  <button type="submit" class="btn" id="add-client-btn">حفظ العميل</button>
-                  <button type="reset" class="btn outline">تفريغ النموذج</button>
+                  <button type="submit" class="btn" id="add-client-btn" data-i18n="save_client">حفظ العميل</button>
+                  <button type="reset" class="btn outline" data-i18n="clear_form">تفريغ النموذج</button>
                 </div>
               </form>
             </div>
           </div>
           <div class="tab-panel" id="clients-reports">
-            <div class="card"><h3>تقارير العملاء</h3><div class="placeholder-report"><div class="big">📈</div><p>لا يوفر الـ API endpoint مخصص لتقارير العملاء حالياً.</p></div></div>
+            <div class="card"><h3 data-i18n="clients_reports_title">تقارير العملاء</h3><div class="placeholder-report"><div class="big">📈</div><p data-i18n="clients_reports_empty">لا يوفر الـ API endpoint مخصص لتقارير العملاء حالياً.</p></div></div>
           </div>
         </section>
 
         <section class="page" id="page-invoicing">
           <div class="tabs" data-group="invoicing">
-            <button class="tab-btn active" data-tab="inv-recent">Recent</button>
-            <button class="tab-btn" data-tab="inv-pending">Pending</button>
-            <button class="tab-btn" data-tab="inv-paid">Paid</button>
-            <button class="tab-btn" data-tab="inv-reports">Reports</button>
+            <button class="tab-btn active" data-tab="inv-recent" data-i18n="inv_recent">الأحدث</button>
+            <button class="tab-btn" data-tab="inv-pending" data-i18n="inv_pending">معلقة</button>
+            <button class="tab-btn" data-tab="inv-paid" data-i18n="inv_paid">مدفوعة</button>
+            <button class="tab-btn" data-tab="inv-reports" data-i18n="reports">تقارير</button>
           </div>
           <div class="tab-panel active" id="inv-recent">
             <div class="card">
               <div class="alert" id="invoices-alert"></div>
-              <div class="toolbar"><input type="search" id="inv-search" placeholder="بحث برقم الفاتورة..."><button class="btn outline sm" id="invoices-reload-btn">تحديث</button></div>
+              <div class="toolbar"><input type="search" id="inv-search" placeholder="بحث برقم الفاتورة..." data-i18n-ph="search_invoice"><button class="btn outline sm" id="invoices-reload-btn" data-i18n="refresh">تحديث</button></div>
               <div id="invoices-table"><div class="skeleton" style="height:180px;"></div></div>
             </div>
           </div>
           <div class="tab-panel" id="inv-pending"><div class="card"><div id="invoices-pending-table"></div></div></div>
           <div class="tab-panel" id="inv-paid"><div class="card"><div id="invoices-paid-table"></div></div></div>
-          <div class="tab-panel" id="inv-reports"><div class="card"><h3>تقارير الفواتير</h3><div class="placeholder-report"><div class="big">🧾</div><p>تقارير مالية شاملة متاحة في ERP &amp; Accounting.</p></div></div></div>
+          <div class="tab-panel" id="inv-reports"><div class="card"><h3 data-i18n="inv_reports_title">تقارير الفواتير</h3><div class="placeholder-report"><div class="big">🧾</div><p data-i18n="inv_reports_body">تقارير مالية شاملة متاحة في التقارير المالية.</p></div></div></div>
         </section>
 
         <section class="page" id="page-erp">
           <div class="tabs" data-group="erp">
-            <button class="tab-btn active" data-tab="erp-coa">Chart of Accounts</button>
-            <button class="tab-btn" data-tab="erp-journal">Journal</button>
-            <button class="tab-btn" data-tab="erp-reports">Reports</button>
+            <button class="tab-btn active" data-tab="erp-coa" data-i18n="erp_coa">دليل الحسابات</button>
+            <button class="tab-btn" data-tab="erp-journal" data-i18n="erp_journal">اليومية</button>
+            <button class="tab-btn" data-tab="erp-reports" data-i18n="reports">تقارير</button>
           </div>
           <div class="tab-panel active" id="erp-coa">
             <div class="card">
               <div class="alert" id="accounts-alert"></div>
-              <div class="toolbar"><input type="search" id="accounts-search" placeholder="ابحث عن حساب..."><button class="btn outline sm" id="accounts-reload-btn">تحديث</button></div>
+              <div class="toolbar"><input type="search" id="accounts-search" placeholder="ابحث عن حساب..." data-i18n-ph="search_account"><button class="btn outline sm" id="accounts-reload-btn" data-i18n="refresh">تحديث</button></div>
               <div id="accounts-table"><div class="skeleton" style="height:180px;"></div></div>
             </div>
           </div>
-          <div class="tab-panel" id="erp-journal"><div class="card"><h3>قيود اليومية</h3><div class="placeholder-report"><div class="big">📒</div><p>يتطلب Bearer Token صالح في ⚙️ الإعدادات.</p></div></div></div>
-          <div class="tab-panel" id="erp-reports"><div class="card"><h3>التقارير المالية</h3><div class="placeholder-report"><div class="big">📑</div><p>Profit &amp; Loss و Balance Sheet تتطلب Bearer Token صالح.</p></div></div></div>
+          <div class="tab-panel" id="erp-journal"><div class="card"><h3 data-i18n="erp_journal_title">قيود اليومية</h3><div class="placeholder-report"><div class="big">📒</div><p data-i18n="erp_journal_body">يتطلب Bearer Token صالح في ⚙️ الإعدادات.</p></div></div></div>
+          <div class="tab-panel" id="erp-reports"><div class="card"><h3 data-i18n="erp_reports_title">التقارير المالية</h3><div class="placeholder-report"><div class="big">📑</div><p data-i18n="erp_reports_body">Profit &amp; Loss و Balance Sheet تتطلب Bearer Token صالح.</p></div></div></div>
         </section>
 
         <section class="page" id="page-knowledge">
           <div class="tabs" data-group="knowledge">
-            <button class="tab-btn active" data-tab="kb-upload">إضافة معرفة</button>
-            <button class="tab-btn" data-tab="kb-files">الملفات المضافة</button>
+            <button class="tab-btn active" data-tab="kb-upload" data-i18n="kb_add">إضافة معرفة</button>
+            <button class="tab-btn" data-tab="kb-files" data-i18n="kb_files">الملفات المضافة</button>
           </div>
 
           <div class="tab-panel active" id="kb-upload">
             <div class="card">
-              <h3>رفع ملف لقاعدة المعرفة</h3>
-              <div class="alert info show" style="margin-bottom:18px;">
+              <h3 data-i18n="kb_upload_title">رفع ملف لقاعدة المعرفة</h3>
+              <div class="alert info show" style="margin-bottom:18px;" data-i18n="kb_info">
                 ارفع ملفاً (PDF / DOCX / TXT) إلى قاعدة المعرفة على الخادم. سيتم تقطيعه إلى chunks
                 واستخدامه كمرجع أثناء الترجمة. اختر الـ Collection المناسبة للمحتوى.
               </div>
               <div class="alert" id="kb-upload-alert"></div>
               <form id="kb-upload-form" class="form-grid">
                 <div class="form-field full">
-                  <label>اختر ملفاً (PDF / DOCX / TXT) *</label>
+                  <label data-i18n="kb_pick_file">اختر ملفاً (PDF / DOCX / TXT) *</label>
                   <input type="file" id="kb-file-picker" accept=".pdf,.docx,.txt" required>
                 </div>
                 <div class="form-field full">
@@ -433,8 +520,8 @@
                   </select>
                 </div>
                 <div class="full" style="display:flex;gap:10px;align-items:center;">
-                  <button type="submit" class="btn" id="kb-upload-btn">رفع الملف</button>
-                  <span class="hint">يتطلب X-API-Key — اضبطه من ⚙️</span>
+                  <button type="submit" class="btn" id="kb-upload-btn" data-i18n="kb_upload_btn">رفع الملف</button>
+                  <span class="hint" data-i18n="requires_apikey">يتطلب X-API-Key — اضبطه من ⚙️</span>
                 </div>
               </form>
             </div>
@@ -444,8 +531,8 @@
             <div class="card">
               <div class="alert" id="kb-files-alert"></div>
               <div class="toolbar">
-                <input type="search" id="kb-search" placeholder="ابحث عن ملف...">
-                <button class="btn outline sm" id="kb-reload-btn">تحديث</button>
+                <input type="search" id="kb-search" placeholder="ابحث عن ملف..." data-i18n-ph="search_kb">
+                <button class="btn outline sm" id="kb-reload-btn" data-i18n="refresh">تحديث</button>
               </div>
               <div id="kb-files-table"><div class="skeleton" style="height:180px;"></div></div>
             </div>
@@ -453,6 +540,7 @@
         </section>
 
       </div>
+      <footer class="app-footer">Powered by <span class="lindo-mark">Lindo</span> — Lindo Translation</footer>
     </div>
   </div>
 </div>
@@ -1046,6 +1134,150 @@
     loadKnowledge();
   });
 
+})();
+</script>
+
+<script>
+/* ================= i18n (design layer only — does not touch API logic) ================= */
+(function(){
+  "use strict";
+  const i18n = {
+    ar: {
+      login_demo:"⚠️ وضع تجريبي: أي بيانات تدخلها هنا تدخلك مباشرة",
+      login_desc:"هذا اللوجن شكلي فقط. للوصول للبيانات الحقيقية، اضبط Bearer Token و X-API-Key من ⚙️ الإعدادات بعد الدخول.",
+      login_user_ph:"اسم المستخدم (أي قيمة)",
+      login_pass_ph:"كلمة المرور (أي قيمة)",
+      login_btn:"دخول",
+      settings_title:"إعدادات الاتصال بالـ API",
+      settings_sub:"تُحفظ هذه القيم في متصفحك فقط (localStorage) ولا تُكتب داخل هذا الملف أبداً. لا تضع هنا أي مفتاح Anthropic — هذه الحقول خاصة بـ backend الموقع فقط.",
+      settings_apikey_label:"X-API-Key (لمسارات الترجمة /api/v1/translations)",
+      settings_apikey_ph:"اتركه فاضي لو غير متوفر",
+      settings_bearer_label:"Bearer Token (لـ /clients و /invoices و /accounting/accounts)",
+      settings_bearer_ph:"احصل عليه من /docs أو من فريق الباك إند",
+      settings_bearer_hint:"هذا اللوجن شكلي ولا يولّد توكن حقيقي. لو عايز بيانات حقيقية، حصّل التوكن بنفسك وحطه هنا.",
+      settings_wp_label:"WordPress Media Upload (اختياري — لرفع ملفات حقيقية)",
+      settings_wp_hint:"لو فاضي، رفع الملفات هيشتغل في وضع Demo فقط (محاكاة وليس رفع حقيقي).",
+      close:"إغلاق", save:"حفظ", logout:"خروج", refresh:"تحديث", configure:"ضبط الإعدادات",
+      sec_general:"عام", sec_finance:"مالية", sec_system:"النظام",
+      nav_overview:"نظرة عامة", nav_translations:"الترجمات", nav_clients:"العملاء",
+      nav_invoices:"الفواتير", nav_reports:"التقارير المالية", nav_knowledge:"قاعدة المعرفة",
+      search_ph:"بحث...",
+      demo_banner:"⚠️ وضع تجريبي — البيانات المعروضة Demo لعدم توفر Bearer Token / X-API-Key أو لتعذر الاتصال بالخادم.",
+      stat_total:"إجمالي طلبات الترجمة", stat_processing:"قيد التنفيذ", stat_done:"مكتملة", stat_failed:"فاشلة",
+      recent_translations:"أحدث طلبات الترجمة",
+      tab_upload:"رفع ملف للترجمة", tab_track:"تتبع حالة الترجمة", tab_all:"كل الطلبات",
+      new_translation:"طلب ترجمة جديد",
+      upload_info:"الـ API الحقيقي يستقبل رابط ملف مرفوع مسبقاً على WordPress Media Library — اختر ملفاً من جهازك وسنحاول رفعه تلقائياً لو ضبطت بيانات WordPress في ⚙️، وإلا سيتم تشغيل محاكاة Demo فقط (بدون ترجمة حقيقية).",
+      pick_file:"اختر ملفاً من جهازك",
+      pick_file_hint:"أو الصق رابط ملف موجود مسبقاً تحت بالحقل التالي بدلاً من رفع ملف جديد.",
+      source_url_label:"رابط الملف المصدر (source_file_url)",
+      filename_label:"اسم الملف (source_filename) *",
+      source_lang:"اللغة المصدر", target_lang:"اللغة الهدف",
+      legal_domain:"التخصص القانوني (اختياري)", client_email:"بريد العميل (اختياري)",
+      client_name:"اسم العميل (اختياري)", client_phone:"هاتف العميل (اختياري)",
+      send_translation:"إرسال للترجمة", requires_apikey:"يتطلب X-API-Key — اضبطه من ⚙️",
+      track_title:"تتبع حالة طلب ترجمة", track_btn:"تتبع",
+      search_file_client:"بحث باسم الملف أو العميل...", all_statuses:"كل الحالات",
+      clients_all:"كل العملاء", clients_add:"إضافة عميل", reports:"تقارير",
+      search_client:"ابحث عن عميل...",
+      add_client_title:"إضافة عميل جديد",
+      client_name_req:"اسم العميل *", email_req:"البريد الإلكتروني *", phone:"رقم الهاتف",
+      address:"العنوان", notes:"ملاحظات", save_client:"حفظ العميل", clear_form:"تفريغ النموذج",
+      clients_reports_title:"تقارير العملاء",
+      clients_reports_empty:"لا يوفر الـ API endpoint مخصص لتقارير العملاء حالياً.",
+      inv_recent:"الأحدث", inv_pending:"معلقة", inv_paid:"مدفوعة",
+      search_invoice:"بحث برقم الفاتورة...",
+      inv_reports_title:"تقارير الفواتير", inv_reports_body:"تقارير مالية شاملة متاحة في التقارير المالية.",
+      erp_coa:"دليل الحسابات", erp_journal:"اليومية",
+      search_account:"ابحث عن حساب...",
+      erp_journal_title:"قيود اليومية", erp_journal_body:"يتطلب Bearer Token صالح في ⚙️ الإعدادات.",
+      erp_reports_title:"التقارير المالية", erp_reports_body:"Profit & Loss و Balance Sheet تتطلب Bearer Token صالح.",
+      kb_add:"إضافة معرفة", kb_files:"الملفات المضافة",
+      kb_upload_title:"رفع ملف لقاعدة المعرفة",
+      kb_info:"ارفع ملفاً (PDF / DOCX / TXT) إلى قاعدة المعرفة على الخادم. سيتم تقطيعه إلى chunks واستخدامه كمرجع أثناء الترجمة. اختر الـ Collection المناسبة للمحتوى.",
+      kb_pick_file:"اختر ملفاً (PDF / DOCX / TXT) *", kb_upload_btn:"رفع الملف",
+      search_kb:"ابحث عن ملف..."
+    },
+    en: {
+      login_demo:"⚠️ Demo mode: any credentials you enter will log you in directly",
+      login_desc:"This login is cosmetic only. To access real data, set the Bearer Token and X-API-Key from ⚙️ Settings after signing in.",
+      login_user_ph:"Username (any value)",
+      login_pass_ph:"Password (any value)",
+      login_btn:"Sign in",
+      settings_title:"API Connection Settings",
+      settings_sub:"These values are stored only in your browser (localStorage) and are never written into this file. Do not put any Anthropic key here — these fields are for the site backend only.",
+      settings_apikey_label:"X-API-Key (for translation routes /api/v1/translations)",
+      settings_apikey_ph:"Leave empty if unavailable",
+      settings_bearer_label:"Bearer Token (for /clients, /invoices, /accounting/accounts)",
+      settings_bearer_ph:"Get it from /docs or from the backend team",
+      settings_bearer_hint:"This login is cosmetic and does not generate a real token. If you want real data, obtain the token yourself and paste it here.",
+      settings_wp_label:"WordPress Media Upload (optional — for real file uploads)",
+      settings_wp_hint:"If empty, uploads run in Demo mode only (simulation, not a real upload).",
+      close:"Close", save:"Save", logout:"Logout", refresh:"Refresh", configure:"Open settings",
+      sec_general:"General", sec_finance:"Finance", sec_system:"System",
+      nav_overview:"Overview", nav_translations:"Translations", nav_clients:"Clients",
+      nav_invoices:"Invoices", nav_reports:"Financial Reports", nav_knowledge:"Knowledge Base",
+      search_ph:"Search...",
+      demo_banner:"⚠️ Demo mode — data shown is Demo because no Bearer Token / X-API-Key is set or the server is unreachable.",
+      stat_total:"Total translation jobs", stat_processing:"In progress", stat_done:"Completed", stat_failed:"Failed",
+      recent_translations:"Latest translation jobs",
+      tab_upload:"Upload file", tab_track:"Track status", tab_all:"All jobs",
+      new_translation:"New translation request",
+      upload_info:"The real API accepts a link to a file already uploaded to the WordPress Media Library — pick a file from your device and we'll try to upload it automatically if WordPress is configured in ⚙️, otherwise a Demo simulation runs (no real translation).",
+      pick_file:"Choose a file from your device",
+      pick_file_hint:"Or paste a link to an existing file in the next field instead of uploading a new one.",
+      source_url_label:"Source file URL (source_file_url)",
+      filename_label:"File name (source_filename) *",
+      source_lang:"Source language", target_lang:"Target language",
+      legal_domain:"Legal domain (optional)", client_email:"Client email (optional)",
+      client_name:"Client name (optional)", client_phone:"Client phone (optional)",
+      send_translation:"Send for translation", requires_apikey:"Requires X-API-Key — set it from ⚙️",
+      track_title:"Track a translation job", track_btn:"Track",
+      search_file_client:"Search by file or client...", all_statuses:"All statuses",
+      clients_all:"All Clients", clients_add:"Add Client", reports:"Reports",
+      search_client:"Search for a client...",
+      add_client_title:"Add a new client",
+      client_name_req:"Client name *", email_req:"Email *", phone:"Phone number",
+      address:"Address", notes:"Notes", save_client:"Save client", clear_form:"Clear form",
+      clients_reports_title:"Client reports",
+      clients_reports_empty:"The API does not provide a dedicated client-reports endpoint yet.",
+      inv_recent:"Recent", inv_pending:"Pending", inv_paid:"Paid",
+      search_invoice:"Search by invoice number...",
+      inv_reports_title:"Invoice reports", inv_reports_body:"Comprehensive financial reports are available under Financial Reports.",
+      erp_coa:"Chart of Accounts", erp_journal:"Journal",
+      search_account:"Search for an account...",
+      erp_journal_title:"Journal entries", erp_journal_body:"Requires a valid Bearer Token in ⚙️ Settings.",
+      erp_reports_title:"Financial reports", erp_reports_body:"Profit & Loss and Balance Sheet require a valid Bearer Token.",
+      kb_add:"Add knowledge", kb_files:"Uploaded files",
+      kb_upload_title:"Upload a file to the knowledge base",
+      kb_info:"Upload a file (PDF / DOCX / TXT) to the knowledge base on the server. It will be split into chunks and used as a reference during translation. Choose the appropriate Collection for the content.",
+      kb_pick_file:"Choose a file (PDF / DOCX / TXT) *", kb_upload_btn:"Upload file",
+      search_kb:"Search for a file..."
+    }
+  };
+
+  function applyLang(lang){
+    const t = i18n[lang] || i18n.ar;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.getAttribute('data-i18n');
+      if(t[k] != null) el.textContent = t[k];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const k = el.getAttribute('data-i18n-ph');
+      if(t[k] != null) el.setAttribute('placeholder', t[k]);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const k = el.getAttribute('data-i18n-title');
+      if(t[k] != null) el.setAttribute('title', t[k]);
+    });
+    localStorage.setItem('lindo_lang', lang);
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.toggle('active', b.getAttribute('data-lang') === lang));
+  }
+
+  document.querySelectorAll('.lang-toggle button').forEach(b => b.addEventListener('click', () => applyLang(b.getAttribute('data-lang'))));
+  applyLang(localStorage.getItem('lindo_lang') || 'ar');
 })();
 </script>
 </body>

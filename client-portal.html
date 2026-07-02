@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lindo Translation — بوابة العميل</title>
+<style>
+  :root{
+    --bg-main:#0b0b12;--bg-card:#111119;--bg-elevated:#14141f;
+    --border:#1e1e2e;--border-hover:#6366f1;
+    --accent1:#6366f1;--accent2:#8b5cf6;
+    --accent-gradient:linear-gradient(135deg,#6366f1,#8b5cf6);
+    --text-main:#f4f4f8;--text-secondary:#8b8ba3;--text-muted:#5c5c74;
+    --success:#34d399;--success-bg:rgba(16,185,129,.12);
+    --warning:#fbbf24;--warning-bg:rgba(245,158,11,.12);
+    --danger:#f87171;--danger-bg:rgba(239,68,68,.12);
+    --info:#60a5fa;--info-bg:rgba(59,130,246,.12);
+    --radius-btn:8px;--radius-card:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;font-family:"Segoe UI","Tahoma",system-ui,sans-serif;background:var(--bg-main);color:var(--text-main);-webkit-font-smoothing:antialiased;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#242438;border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  .logo{width:34px;height:34px;border-radius:50%;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:17px;box-shadow:0 4px 14px rgba(99,102,241,.4);flex-shrink:0;}
+  .logo.lg{width:56px;height:56px;font-size:26px;}
+  .lindo-mark{background:var(--accent-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;}
+
+  /* ---------- Login ---------- */
+  #login-screen{position:fixed;inset:0;background:radial-gradient(1200px 600px at 50% -10%,rgba(99,102,241,.18),transparent 60%),var(--bg-main);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .login-box{background:var(--bg-card);width:100%;max-width:400px;padding:36px 32px;border-radius:16px;border:1px solid var(--border);box-shadow:0 30px 80px rgba(0,0,0,.6);text-align:center;}
+  .login-brand{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:8px;}
+  .login-brand h1{margin:0;font-size:20px;font-weight:700;}
+  .login-sub{color:var(--text-secondary);font-size:13px;margin-bottom:18px;}
+  .demo-pill{display:inline-block;background:var(--warning-bg);color:var(--warning);font-size:11.5px;padding:5px 12px;border-radius:20px;margin-bottom:16px;font-weight:600;border:1px solid rgba(245,158,11,.25);}
+  .login-box p{margin:0 0 22px;color:var(--text-secondary);font-size:13.5px;line-height:1.7;}
+  .login-box input{width:100%;padding:12px 14px;margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius-btn);font-size:14px;background:var(--bg-elevated);color:var(--text-main);transition:.15s;}
+  .login-box input::placeholder{color:var(--text-muted);}
+  .login-box input:focus{outline:none;border-color:var(--border-hover);box-shadow:0 0 0 3px rgba(99,102,241,.18);}
+  .login-box button[type=submit]{width:100%;padding:12px;border:none;border-radius:var(--radius-btn);background:var(--accent-gradient);color:#fff;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,.35);transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+  .login-box button[type=submit]:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.5);}
+  .login-msg{font-size:13px;margin-top:12px;min-height:18px;color:var(--danger);}
+  .login-foot{margin-top:22px;font-size:12px;color:var(--text-muted);}
+
+  /* ---------- App shell ---------- */
+  #app{display:none;min-height:100vh;flex-direction:column;}
+  .topbar{background:rgba(17,17,25,.75);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:12px;}
+  .topbar .brand{display:flex;align-items:center;gap:11px;}
+  .topbar .brand span{font-weight:700;font-size:15px;}
+  .right-group{display:flex;align-items:center;gap:10px;}
+  .lang-toggle{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-btn);overflow:hidden;background:var(--bg-elevated);}
+  .lang-toggle button{background:none;border:none;color:var(--text-secondary);padding:6px 11px;font-size:12px;cursor:pointer;font-weight:700;font-family:inherit;transition:.15s;}
+  .lang-toggle button.active{background:var(--accent-gradient);color:#fff;}
+  .user-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);}
+  .icon-btn{background:var(--bg-elevated);border:1px solid var(--border);width:36px;height:36px;border-radius:var(--radius-btn);cursor:pointer;font-size:15px;color:var(--text-secondary);transition:.15s;}
+  .icon-btn:hover{color:var(--text-main);border-color:var(--border-hover);}
+  .btn-text{background:var(--bg-elevated);border:1px solid var(--border);padding:8px 14px;border-radius:var(--radius-btn);cursor:pointer;font-size:13px;color:var(--text-secondary);font-family:inherit;transition:.15s;}
+  .btn-text:hover{color:var(--text-main);border-color:var(--border-hover);}
+
+  .banner{padding:10px 24px;font-size:13px;display:none;align-items:center;justify-content:space-between;gap:10px;}
+  .banner.show{display:flex;}
+  .banner.demo{background:var(--warning-bg);color:var(--warning);border-bottom:1px solid rgba(245,158,11,.2);}
+  .banner button{background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:12.5px;font-family:inherit;}
+
+  .container{max-width:920px;margin:0 auto;padding:24px 20px 40px;width:100%;flex:1;}
+  .app-footer{text-align:center;padding:18px;color:var(--text-muted);font-size:12px;border-top:1px solid var(--border);}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
+  .tabs button{background:none;border:none;padding:10px 16px;font-size:13.5px;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500;font-family:inherit;transition:.15s;}
+  .tabs button:hover{color:var(--text-main);}
+  .tabs button.active{color:var(--text-main);border-bottom-color:var(--accent1);font-weight:600;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .card{background:var(--bg-card);border-radius:var(--radius-card);border:1px solid var(--border);padding:22px;margin-bottom:20px;}
+  .card h3{margin:0 0 16px;font-size:15px;color:var(--text-main);}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{padding:13px 12px;text-align:start;border-bottom:1px solid var(--border);}
+  th{color:var(--text-secondary);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  td{color:var(--text-main);}
+  tbody tr{transition:background .12s;}
+  tbody tr:hover{background:var(--bg-elevated);}
+  tbody tr:last-child td{border-bottom:none;}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:600;line-height:1.6;}
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;flex-shrink:0;}
+  .badge.success{color:var(--success);background:var(--success-bg);}
+  .badge.warning{color:var(--warning);background:var(--warning-bg);}
+  .badge.danger{color:var(--danger);background:var(--danger-bg);}
+  .badge.info{color:var(--info);background:var(--info-bg);}
+  .badge.muted{color:var(--text-secondary);background:rgba(139,139,163,.12);}
+  .badge.info::before{animation:pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(1.6);}}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .form-grid .full{grid-column:1/-1;}
+  .form-field label{display:block;font-size:13px;margin-bottom:6px;color:var(--text-secondary);font-weight:500;}
+  .form-field input,.form-field select,.form-field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-btn);font-size:13.5px;background:var(--bg-elevated);color:var(--text-main);font-family:inherit;transition:.15s;}
+  .form-field input::placeholder{color:var(--text-muted);}
+  .form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--border-hover);box-shadow:0 0 0 3px rgba(99,102,241,.15);}
+  .hint{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+
+  /* ---------- Upload dropzone ---------- */
+  .dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:40px 20px;border:2px dashed var(--border);border-radius:var(--radius-card);background:var(--bg-elevated);cursor:pointer;text-align:center;transition:.18s;}
+  .dropzone:hover,.dropzone.drag{border-color:var(--border-hover);background:rgba(99,102,241,.07);box-shadow:0 0 0 4px rgba(99,102,241,.12);}
+  .dz-icon{font-size:34px;line-height:1;filter:drop-shadow(0 4px 10px rgba(99,102,241,.4));}
+  .dz-text{font-size:14px;color:var(--text-main);font-weight:600;}
+  .dz-hint{font-size:12px;color:var(--text-muted);}
+  .dz-file{font-size:12.5px;color:var(--accent1);margin-top:4px;font-weight:600;min-height:16px;}
+
+  .btn{background:var(--accent-gradient);color:#fff;border:none;padding:10px 18px;border-radius:var(--radius-btn);font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(99,102,241,.35);transition:.15s;font-family:inherit;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.5);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none;}
+  .btn.outline{background:transparent;color:var(--text-main);border:1px solid var(--border);box-shadow:none;}
+  .btn.outline:hover{border-color:var(--border-hover);background:var(--bg-elevated);transform:none;}
+  .btn.sm{padding:6px 12px;font-size:12.5px;box-shadow:none;}
+  .btn.sm:hover{transform:none;box-shadow:0 4px 12px rgba(99,102,241,.3);}
+
+  .alert{padding:12px 16px;border-radius:var(--radius-btn);font-size:13.5px;margin-bottom:16px;display:none;border:1px solid transparent;}
+  .alert.show{display:block;}
+  .alert.error{background:var(--danger-bg);color:#fca5a5;border-color:rgba(239,68,68,.3);}
+  .alert.success{background:var(--success-bg);color:#6ee7b7;border-color:rgba(16,185,129,.3);}
+  .alert.info{background:rgba(99,102,241,.1);color:#a5b4fc;border-color:rgba(99,102,241,.3);}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .skeleton{background:linear-gradient(90deg,#14141f 25%,#1e1e2e 37%,#14141f 63%);background-size:400% 100%;animation:skeleton 1.4s ease infinite;border-radius:var(--radius-btn);}
+  @keyframes skeleton{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+  .progress-wrap{background:var(--border);border-radius:999px;height:8px;overflow:hidden;margin-top:8px;}
+  .progress-bar{height:100%;background:var(--accent-gradient);width:0%;transition:width .4s ease;border-radius:999px;}
+
+  #toast-container{position:fixed;bottom:20px;inset-inline-start:20px;z-index:2000;display:flex;flex-direction:column;gap:10px;}
+  .toast{background:var(--bg-elevated);color:var(--text-main);border:1px solid var(--border);padding:12px 18px;border-radius:10px;font-size:13.5px;box-shadow:0 12px 34px rgba(0,0,0,.55);min-width:240px;max-width:340px;animation:toastIn .25s ease;border-inline-start:3px solid var(--text-muted);}
+  .toast.success{border-inline-start-color:var(--success);}
+  .toast.error{border-inline-start-color:var(--danger);}
+  .toast.info{border-inline-start-color:var(--info);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:1500;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:26px;width:100%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+  .modal h3{margin:0 0 6px;color:var(--text-main);}
+  .modal p.sub{font-size:12.5px;color:var(--text-secondary);margin:0 0 18px;line-height:1.7;}
+  .modal .modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+
+  @media (max-width:768px){
+    .form-grid{grid-template-columns:1fr;}
+    .topbar{padding:12px 16px;}
+    .banner{padding:10px 16px;}
+    .container{padding:18px 14px 30px;}
+    table{font-size:12.5px;}
+    th,td{padding:10px 7px;}
+  }
+  @media (max-width:480px){
+    .tabs{gap:2px;}
+    .tabs button{padding:8px 11px;font-size:13px;}
+    #toast-container{inset-inline:10px;}
+    .toast{max-width:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="logo lg">L</div>
+      <h1>Lindo Translation</h1>
+    </div>
+    <div class="login-sub" data-i18n="portal_subtitle">بوابة العميل</div>
+    <div class="demo-pill" data-i18n="login_demo">⚠️ وضع تجريبي: أي بريد وكلمة مرور تدخل</div>
+    <p data-i18n="login_desc">سجّل بريدك الإلكتروني لمتابعة طلبات ترجمتك وفواتيرك.</p>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="بريدك الإلكتروني" data-i18n-ph="login_email_ph" required>
+      <input type="password" id="login-pass" placeholder="كلمة المرور (أي قيمة)" data-i18n-ph="login_pass_ph" required>
+      <button type="submit" id="login-btn"><span id="login-btn-text" data-i18n="login_btn">دخول</span></button>
+      <div class="login-msg" id="login-msg"></div>
+    </form>
+    <div class="login-foot">Powered by <span class="lindo-mark">Lindo</span></div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="toast-container"></div>
+
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+      <h3 data-i18n="settings_title">إعدادات الاتصال</h3>
+      <p class="sub" data-i18n="settings_sub">تُحفظ هذه القيم في متصفحك فقط (localStorage). لا تضع هنا أي مفتاح Anthropic.</p>
+      <div class="form-field" style="margin-bottom:14px;"><label>Base URL</label><input type="text" id="settings-base-url"></div>
+      <div class="form-field"><label data-i18n="settings_apikey_label">X-API-Key (لمسارات الترجمة والبوابة)</label><input type="password" id="settings-api-key" placeholder="اتركه فاضي لو غير متوفر" data-i18n-ph="settings_apikey_ph"></div>
+      <div class="modal-actions">
+        <button class="btn outline" id="settings-cancel" data-i18n="close">إغلاق</button>
+        <button class="btn" id="settings-save" data-i18n="save">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <div class="brand"><div class="logo">L</div><span>Lindo Translation</span></div>
+    <div class="right-group">
+      <div class="lang-toggle">
+        <button type="button" data-lang="ar">AR</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <div class="user-chip"><span id="topbar-email">—</span></div>
+      <button class="icon-btn" id="open-settings-btn" title="الإعدادات">⚙️</button>
+      <button class="btn-text" id="logout-btn" data-i18n="logout">خروج</button>
+    </div>
+  </div>
+
+  <div class="banner demo" id="demo-banner">
+    <span id="demo-banner-text" data-i18n="demo_banner">⚠️ وضع تجريبي — تعذّر الاتصال بالخادم أو X-API-Key غير مضبوط، البيانات المعروضة Demo.</span>
+    <button id="open-settings-from-banner" data-i18n="configure">ضبط الإعدادات</button>
+  </div>
+
+  <div class="container">
+    <div class="alert" id="welcome-alert"></div>
+
+    <div class="tabs" data-group="portal">
+      <button class="tab-btn active" data-tab="portal-upload" data-i18n="tab_new">ترجمة جديدة</button>
+      <button class="tab-btn" data-tab="portal-track" data-i18n="tab_mine">طلباتي</button>
+      <button class="tab-btn" data-tab="portal-invoices" data-i18n="tab_invoices">فواتيري</button>
+    </div>
+
+    <div class="tab-panel active" id="portal-upload">
+      <div class="card">
+        <h3 data-i18n="new_translation">طلب ترجمة جديد</h3>
+        <div class="alert info show" style="margin-bottom:18px;" data-i18n="upload_info">
+          الـ API الحقيقي يستقبل رابط ملف مرفوع مسبقاً على مكتبة الوسائط. اختر ملفاً من جهازك كحل بديل سريع (Demo) أو ضع رابطاً جاهزاً.
+        </div>
+        <div class="alert" id="upload-alert"></div>
+        <form id="upload-form" class="form-grid">
+          <div class="form-field full">
+            <label data-i18n="pick_file">اختر ملفاً من جهازك</label>
+            <label class="dropzone" id="dropzone" for="f-file-picker">
+              <div class="dz-icon">⬆️</div>
+              <div class="dz-text" data-i18n="dropzone_text">اسحب ملفك هنا أو اضغط للاختيار</div>
+              <div class="dz-hint" data-i18n="dropzone_hint">PDF · DOCX · TXT</div>
+              <div class="dz-file" id="dz-file"></div>
+            </label>
+            <input type="file" id="f-file-picker" style="display:none;">
+          </div>
+          <div class="form-field full"><label data-i18n="or_url">أو رابط ملف موجود مسبقاً</label><input type="url" id="f-source-url" placeholder="https://moajamalmaani.com/wp-content/uploads/file.pdf"></div>
+          <div class="form-field"><label data-i18n="filename_label">اسم الملف *</label><input type="text" id="f-source-filename" required></div>
+          <div class="form-field"><label data-i18n="target_lang">اللغة الهدف</label><input type="text" id="f-target-lang" value="Arabic"></div>
+          <div class="full" style="display:flex;gap:10px;align-items:center;">
+            <button type="submit" class="btn" id="upload-submit-btn" data-i18n="send_translation">إرسال للترجمة</button>
+            <span class="hint" data-i18n="requires_apikey">يتطلب X-API-Key — اضبطه من ⚙️</span>
+          </div>
+        </form>
+        <div id="upload-progress" style="display:none;margin-top:18px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);"><span id="progress-label">جارٍ المعالجة...</span><span id="progress-pct">0%</span></div>
+          <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="portal-track">
+      <div class="card">
+        <h3 data-i18n="my_requests_title">طلبات الترجمة الخاصة بي</h3>
+        <div class="alert" id="track-alert"></div>
+        <div id="my-translations-table"><div class="skeleton" style="height:160px;"></div></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="portal-invoices">
+      <div class="card">
+        <h3 data-i18n="my_invoices_title">فواتيري</h3>
+        <div class="alert" id="invoices-alert"></div>
+        <div id="my-invoices-table"><div class="skeleton" style="height:160px;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">Powered by <span class="lindo-mark">Lindo</span> — Lindo Translation</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const CONFIG = { BASE_URL: 'https://moajam-api.onrender.com' };
+  const EP = {
+    portalLookup: '/api/v1/portal/clients/lookup',
+    portalInvoices: '/api/v1/portal/invoices',
+    translations: '/api/v1/translations',
+    translationJob: (id) => '/api/v1/translations/' + encodeURIComponent(id)
+  };
+
+  const state = {
+    baseUrl: localStorage.getItem('moajam_base_url') || CONFIG.BASE_URL,
+    apiKey: localStorage.getItem('moajam_api_key') || '',
+    email: '',
+    pickedFile: null
+  };
+
+  function toast(message, type){
+    type = type || 'info';
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = message;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+  function showAlert(id, message, type){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = 'alert show ' + (type || 'error');
+    el.textContent = message;
+  }
+  function clearAlert(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = 'alert';
+    el.textContent = '';
+  }
+  function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmtDate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleString('ar-EG'); }catch(e){ return s; } }
+  function statusBadge(status){
+    const map = { pending:'warning', processing:'info', done:'success', failed:'danger', draft:'muted', sent:'info', paid:'success', overdue:'danger', cancelled:'muted' };
+    return '<span class="badge ' + (map[status] || 'muted') + '">' + escapeHtml(status) + '</span>';
+  }
+  function formEncode(obj){
+    const params = new URLSearchParams();
+    Object.keys(obj).forEach(k => { if(obj[k] !== undefined && obj[k] !== null && obj[k] !== '') params.append(k, obj[k]); });
+    return params;
+  }
+  function qs(obj){
+    const params = new URLSearchParams();
+    Object.keys(obj).forEach(k => { if(obj[k] !== undefined && obj[k] !== null && obj[k] !== '') params.append(k, obj[k]); });
+    const s = params.toString();
+    return s ? '?' + s : '';
+  }
+
+  async function apiFetch(path, opts){
+    opts = opts || {};
+    const headers = Object.assign({}, opts.headers || {});
+    if(opts.apiKey){
+      if(!state.apiKey) return { ok:false, kind:'config', status:0, message:'X-API-Key غير مضبوط. افتح ⚙️ وأدخله.' };
+      headers['X-API-Key'] = state.apiKey;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), opts.timeoutMs || 45000);
+    let res;
+    try{
+      res = await fetch(state.baseUrl.replace(/\/+$/, '') + path, { method: opts.method || 'GET', headers, body: opts.body, signal: controller.signal });
+    }catch(err){
+      clearTimeout(timer);
+      if(err.name === 'AbortError') return { ok:false, kind:'timeout', status:0, message:'انتهت مهلة الاتصال (الخادم قد يكون نائماً). حاول مرة أخرى.' };
+      return { ok:false, kind:'network', status:0, message:'تعذر الوصول إلى الخادم (شبكة أو CORS). إصلاح CORS يتم من إعدادات الخادم لا من هذا الملف.' };
+    }
+    clearTimeout(timer);
+    let data = null;
+    const text = await res.text();
+    if(text){ try{ data = JSON.parse(text); }catch(e){ data = text; } }
+    if(res.ok) return { ok:true, status:res.status, data };
+    if(res.status === 401) return { ok:false, kind:'auth', status:401, data, message:'غير مصرح (401) — تحقق من X-API-Key.' };
+    if(res.status === 403) return { ok:false, kind:'forbidden', status:403, data, message:'ممنوع الوصول (403).' };
+    if(res.status === 404) return { ok:false, kind:'notfound', status:404, data, message:'غير موجود (404).' };
+    if(res.status === 422){
+      let detail = 'بيانات غير صحيحة.';
+      if(data && Array.isArray(data.detail)) detail = data.detail.map(d => (Array.isArray(d.loc)?d.loc.join('.'):'') + ': ' + d.msg).join(' | ');
+      return { ok:false, kind:'validation', status:422, data, message:'خطأ بيانات (422): ' + detail };
+    }
+    if(res.status >= 500) return { ok:false, kind:'server', status:res.status, data, message:'خطأ خادم (HTTP ' + res.status + '). حاول لاحقاً.' };
+    return { ok:false, kind:'unknown', status:res.status, data, message:'خطأ غير متوقع (HTTP ' + res.status + ').' };
+  }
+
+  /* ---------- Login: accepts any email/password (cosmetic), then tries a real lookup ---------- */
+  const loginForm = document.getElementById('login-form');
+  const loginMsg = document.getElementById('login-msg');
+  const loginBtn = document.getElementById('login-btn');
+  const loginBtnText = document.getElementById('login-btn-text');
+
+  loginForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-pass').value.trim();
+    loginMsg.textContent = '';
+    if(!email || !pass){ loginMsg.textContent = 'أدخل بريداً وكلمة مرور.'; return; }
+
+    loginBtn.disabled = true;
+    loginBtnText.innerHTML = '<span class="spinner"></span> جاري الدخول...';
+    state.email = email;
+
+    if(state.apiKey){
+      const result = await apiFetch(EP.portalLookup + qs({ email }), { apiKey:true });
+      if(result.ok && result.data){
+        toast('تم العثور على بياناتك: ' + result.data.name, 'success');
+      }else if(result.ok && !result.data){
+        toast('لا يوجد سجل عميل بهذا البريد — يمكنك المتابعة كعميل جديد.', 'info');
+      }else if(result.kind !== 'config'){
+        toast(result.message, 'info');
+      }
+    }
+
+    loginBtn.disabled = false;
+    loginBtnText.textContent = 'دخول';
+    enterApp(email);
+  });
+
+  function enterApp(email){
+    document.getElementById('topbar-email').textContent = email;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('settings-base-url').value = state.baseUrl;
+    document.getElementById('settings-api-key').value = state.apiKey;
+    showAlert('welcome-alert', 'مرحباً بك، ' + email + '. لو فعلت مفتاح X-API-Key من ⚙️ سيتم جلب بياناتك الحقيقية تلقائياً.', 'info');
+    loadMyTranslations();
+    loadMyInvoices();
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', function(){
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    loginForm.reset();
+    loginMsg.textContent = '';
+  });
+
+  function showDemoBanner(text){
+    document.getElementById('demo-banner-text').textContent = text || '⚠️ وضع تجريبي — البيانات المعروضة Demo.';
+    document.getElementById('demo-banner').classList.add('show');
+  }
+  function hideDemoBanner(){ document.getElementById('demo-banner').classList.remove('show'); }
+
+  const settingsModal = document.getElementById('settings-modal');
+  function openSettings(){ settingsModal.classList.add('show'); }
+  document.getElementById('open-settings-btn').addEventListener('click', openSettings);
+  document.getElementById('open-settings-from-banner').addEventListener('click', openSettings);
+  document.getElementById('settings-cancel').addEventListener('click', () => settingsModal.classList.remove('show'));
+  document.getElementById('settings-save').addEventListener('click', function(){
+    state.baseUrl = document.getElementById('settings-base-url').value.trim() || CONFIG.BASE_URL;
+    state.apiKey = document.getElementById('settings-api-key').value.trim();
+    localStorage.setItem('moajam_base_url', state.baseUrl);
+    localStorage.setItem('moajam_api_key', state.apiKey);
+    settingsModal.classList.remove('show');
+    toast('تم حفظ الإعدادات محلياً في متصفحك.', 'success');
+    loadMyTranslations();
+    loadMyInvoices();
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(tabGroup){
+    const buttons = tabGroup.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.addEventListener('click', function(){
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const targetId = btn.getAttribute('data-tab');
+      tabGroup.parentElement.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+    }));
+  });
+
+  /* ---------- File picker (demo-only upload; this API needs an already-hosted URL) ---------- */
+  document.getElementById('f-file-picker').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    state.pickedFile = file;
+    document.getElementById('f-source-filename').value = file.name;
+    document.getElementById('f-source-url').value = '';
+    toast('تم اختيار: ' + file.name + ' — سيتم إرساله في وضع Demo لأن لا يوجد رفع مباشر بدون إعداد WordPress.', 'info');
+  });
+
+  document.getElementById('upload-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    clearAlert('upload-alert');
+    const btn = document.getElementById('upload-submit-btn');
+    const progress = document.getElementById('upload-progress');
+    const bar = document.getElementById('progress-bar');
+    const pct = document.getElementById('progress-pct');
+    const label = document.getElementById('progress-label');
+
+    let sourceUrl = document.getElementById('f-source-url').value.trim();
+    const filename = document.getElementById('f-source-filename').value.trim();
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> جاري الإرسال...';
+    progress.style.display = 'block';
+    bar.style.width = '10%'; pct.textContent = '10%';
+
+    if(!sourceUrl && state.pickedFile){
+      if(!state.apiKey){
+        btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+        progress.style.display = 'none';
+        showAlert('upload-alert', 'X-API-Key غير مضبوط — اضبطه من ⚙️ ليتم رفع الملف عبر الخادم.', 'info');
+        return;
+      }
+      // Upload the raw file to the backend, which relays it to the WordPress
+      // Media Library and returns a permanent URL (password stays server-side).
+      label.textContent = 'جارٍ رفع الملف عبر الخادم...';
+      bar.style.width = '40%'; pct.textContent = '40%';
+      const fd = new FormData();
+      fd.append('file', state.pickedFile);
+      const up = await apiFetch('/api/v1/translations/upload', { method:'POST', apiKey:true, body: fd });
+      if(!up.ok){
+        btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+        progress.style.display = 'none';
+        showAlert('upload-alert', up.message, up.kind === 'config' ? 'info' : 'error');
+        return;
+      }
+      sourceUrl = up.data.url;
+    }
+
+    if(!sourceUrl){
+      btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+      progress.style.display = 'none';
+      showAlert('upload-alert', 'اختر ملفاً أو أدخل رابط ملف.', 'error');
+      return;
+    }
+
+    label.textContent = 'جارٍ إنشاء طلب الترجمة...';
+    bar.style.width = '70%'; pct.textContent = '70%';
+    const payload = {
+      source_file_url: sourceUrl,
+      source_filename: filename,
+      target_language: document.getElementById('f-target-lang').value.trim() || 'Arabic',
+      client_email: state.email
+    };
+    const result = await apiFetch(EP.translations, { method:'POST', apiKey:true, headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formEncode(payload) });
+    btn.disabled = false; btn.textContent = 'إرسال للترجمة';
+
+    if(!result.ok){
+      progress.style.display = 'none';
+      showAlert('upload-alert', result.message, result.kind === 'config' ? 'info' : 'error');
+      return;
+    }
+    bar.style.width = '100%'; pct.textContent = '100%';
+    showAlert('upload-alert', 'تم إرسال طلب الترجمة بنجاح. job_id: ' + result.data.job_id, 'success');
+    toast('تم الإرسال للترجمة', 'success');
+    setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; loadMyTranslations(); }, 1200);
+  });
+
+  /* ---------- My translations (filtered by client_email) ---------- */
+  async function loadMyTranslations(){
+    clearAlert('track-alert');
+    const el = document.getElementById('my-translations-table');
+    if(!state.apiKey){
+      showAlert('track-alert', 'X-API-Key غير مضبوط — يتم عرض بيانات Demo.', 'info');
+      renderMyTranslations(demoJobs());
+      showDemoBanner();
+      return;
+    }
+    const result = await apiFetch(EP.translations + qs({ client_email: state.email }), { apiKey:true });
+    if(!result.ok){
+      el.innerHTML = '';
+      showAlert('track-alert', result.message);
+      renderMyTranslations(demoJobs());
+      showDemoBanner('⚠️ ' + result.message + ' — البيانات المعروضة Demo.');
+      return;
+    }
+    hideDemoBanner();
+    renderMyTranslations(result.data || []);
+  }
+  function demoJobs(){
+    return [{ id:'demo-1', source_filename:'demo-contract.pdf', status:'done', target_language:'Arabic', created_at:new Date().toISOString() }];
+  }
+  function renderMyTranslations(list){
+    const el = document.getElementById('my-translations-table');
+    if(!list.length){ el.innerHTML = '<p style="color:var(--text-muted);">لا توجد طلبات ترجمة بعد.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>الملف</th><th>اللغة الهدف</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>' +
+      list.map(j => '<tr><td>'+escapeHtml(j.source_filename)+'</td><td>'+escapeHtml(j.target_language)+'</td><td>'+statusBadge(j.status)+'</td><td>'+fmtDate(j.created_at)+
+        '</td><td>'+(j.status==='done' ? '<button class="btn sm outline" onclick="window.__downloadJob(\''+encodeURIComponent(j.output_url||'')+'\')">تحميل</button>' : '')+'</td></tr>').join('') +
+      '</tbody></table>';
+  }
+  // The job's output_url is already a public WordPress media URL, so open it
+  // directly. Going through the backend /download endpoint would 302-redirect
+  // cross-origin and fetch can't follow that under CORS.
+  window.__downloadJob = function(encodedUrl){
+    const url = decodeURIComponent(encodedUrl || '');
+    if(url) window.open(url, '_blank'); else toast('الملف غير جاهز بعد.', 'info');
+  };
+
+  /* ---------- My invoices ---------- */
+  async function loadMyInvoices(){
+    clearAlert('invoices-alert');
+    const el = document.getElementById('my-invoices-table');
+    if(!state.apiKey){
+      showAlert('invoices-alert', 'X-API-Key غير مضبوط — يتم عرض بيانات Demo.', 'info');
+      renderMyInvoices(demoInvoices());
+      showDemoBanner();
+      return;
+    }
+    const result = await apiFetch(EP.portalInvoices + qs({ client_email: state.email }), { apiKey:true });
+    if(!result.ok){
+      el.innerHTML = '';
+      showAlert('invoices-alert', result.message);
+      renderMyInvoices(demoInvoices());
+      showDemoBanner('⚠️ ' + result.message + ' — البيانات المعروضة Demo.');
+      return;
+    }
+    hideDemoBanner();
+    renderMyInvoices(result.data || []);
+  }
+  function demoInvoices(){
+    return [{ id:1, number:'INV-DEMO-1', status:'paid', total:1000, currency:'EGP', issue_date:new Date().toISOString().slice(0,10) }];
+  }
+  function renderMyInvoices(list){
+    const el = document.getElementById('my-invoices-table');
+    if(!list.length){ el.innerHTML = '<p style="color:var(--text-muted);">لا توجد فواتير.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>رقم الفاتورة</th><th>الإجمالي</th><th>تاريخ الإصدار</th><th>الحالة</th><th></th></tr></thead><tbody>' +
+      list.map(i => '<tr><td>'+escapeHtml(i.number)+'</td><td>'+i.total+' '+escapeHtml(i.currency)+'</td><td>'+i.issue_date+'</td><td>'+statusBadge(i.status)+
+        '</td><td><button class="btn sm outline" onclick="window.__downloadInvoice('+i.id+')">تحميل PDF</button></td></tr>').join('') +
+      '</tbody></table>';
+  }
+  window.__downloadInvoice = async function(invoiceId){
+    const result = await apiFetch('/api/v1/portal/invoices/' + invoiceId + '/download', { apiKey:true });
+    if(!result.ok){ toast(result.message, 'error'); return; }
+    const url = (result.data && result.data.url) || (typeof result.data === 'string' ? result.data : null);
+    if(url) window.open(url, '_blank'); else toast('رابط التحميل غير متاح في الاستجابة.', 'info');
+  };
+
+})();
+</script>
+
+<script>
+/* ================= Design enhancements: dropzone drag/drop + i18n (no API logic changes) ================= */
+(function(){
+  "use strict";
+
+  /* ---- Drag & drop visual + file assignment (feeds the existing file input) ---- */
+  const dropzone = document.getElementById('dropzone');
+  const picker = document.getElementById('f-file-picker');
+  const dzFile = document.getElementById('dz-file');
+  if(dropzone && picker){
+    ['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+    ['dragleave','dragend','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+    dropzone.addEventListener('drop', e => {
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if(files && files.length){
+        picker.files = files;                       // hand the dropped file to the existing input
+        picker.dispatchEvent(new Event('change'));  // reuse the original change handler / logic
+      }
+    });
+    // Mirror the selected filename inside the dropzone (purely visual).
+    picker.addEventListener('change', () => {
+      dzFile.textContent = picker.files && picker.files[0] ? picker.files[0].name : '';
+    });
+  }
+
+  /* ---- i18n ---- */
+  const i18n = {
+    ar: {
+      portal_subtitle:"بوابة العميل",
+      login_demo:"⚠️ وضع تجريبي: أي بريد وكلمة مرور تدخل",
+      login_desc:"سجّل بريدك الإلكتروني لمتابعة طلبات ترجمتك وفواتيرك.",
+      login_email_ph:"بريدك الإلكتروني",
+      login_pass_ph:"كلمة المرور (أي قيمة)",
+      login_btn:"دخول",
+      settings_title:"إعدادات الاتصال",
+      settings_sub:"تُحفظ هذه القيم في متصفحك فقط (localStorage). لا تضع هنا أي مفتاح Anthropic.",
+      settings_apikey_label:"X-API-Key (لمسارات الترجمة والبوابة)",
+      settings_apikey_ph:"اتركه فاضي لو غير متوفر",
+      close:"إغلاق", save:"حفظ", logout:"خروج", configure:"ضبط الإعدادات",
+      demo_banner:"⚠️ وضع تجريبي — تعذّر الاتصال بالخادم أو X-API-Key غير مضبوط، البيانات المعروضة Demo.",
+      tab_new:"ترجمة جديدة", tab_mine:"طلباتي", tab_invoices:"فواتيري",
+      new_translation:"طلب ترجمة جديد",
+      upload_info:"الـ API الحقيقي يستقبل رابط ملف مرفوع مسبقاً على مكتبة الوسائط. اختر ملفاً من جهازك كحل بديل سريع (Demo) أو ضع رابطاً جاهزاً.",
+      pick_file:"اختر ملفاً من جهازك",
+      dropzone_text:"اسحب ملفك هنا أو اضغط للاختيار",
+      dropzone_hint:"PDF · DOCX · TXT",
+      or_url:"أو رابط ملف موجود مسبقاً",
+      filename_label:"اسم الملف *",
+      target_lang:"اللغة الهدف",
+      send_translation:"إرسال للترجمة",
+      requires_apikey:"يتطلب X-API-Key — اضبطه من ⚙️",
+      my_requests_title:"طلبات الترجمة الخاصة بي",
+      my_invoices_title:"فواتيري"
+    },
+    en: {
+      portal_subtitle:"Client Portal",
+      login_demo:"⚠️ Demo mode: any email and password will do",
+      login_desc:"Sign in with your email to follow your translation requests and invoices.",
+      login_email_ph:"Your email",
+      login_pass_ph:"Password (any value)",
+      login_btn:"Sign in",
+      settings_title:"Connection Settings",
+      settings_sub:"These values are stored only in your browser (localStorage). Do not put any Anthropic key here.",
+      settings_apikey_label:"X-API-Key (for translation and portal routes)",
+      settings_apikey_ph:"Leave empty if unavailable",
+      close:"Close", save:"Save", logout:"Logout", configure:"Open settings",
+      demo_banner:"⚠️ Demo mode — the server is unreachable or X-API-Key is not set; data shown is Demo.",
+      tab_new:"New Translation", tab_mine:"My Requests", tab_invoices:"My Invoices",
+      new_translation:"New translation request",
+      upload_info:"The real API accepts a link to a file already uploaded to the Media Library. Pick a file from your device as a quick fallback (Demo) or paste a ready-made link.",
+      pick_file:"Choose a file from your device",
+      dropzone_text:"Drag your file here or click to browse",
+      dropzone_hint:"PDF · DOCX · TXT",
+      or_url:"Or a link to an existing file",
+      filename_label:"File name *",
+      target_lang:"Target language",
+      send_translation:"Send for translation",
+      requires_apikey:"Requires X-API-Key — set it from ⚙️",
+      my_requests_title:"My translation requests",
+      my_invoices_title:"My invoices"
+    }
+  };
+
+  function applyLang(lang){
+    const t = i18n[lang] || i18n.ar;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.getAttribute('data-i18n');
+      if(t[k] != null) el.textContent = t[k];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const k = el.getAttribute('data-i18n-ph');
+      if(t[k] != null) el.setAttribute('placeholder', t[k]);
+    });
+    localStorage.setItem('lindo_lang', lang);
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.toggle('active', b.getAttribute('data-lang') === lang));
+  }
+
+  document.querySelectorAll('.lang-toggle button').forEach(b => b.addEventListener('click', () => applyLang(b.getAttribute('data-lang'))));
+  applyLang(localStorage.getItem('lindo_lang') || 'ar');
+})();
+</script>
+</body>
+</html>
